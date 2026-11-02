@@ -137,8 +137,8 @@ const lineNumbers = defineModel('lineNumbers')
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 20px;
+  gap: 10px;
+  padding: 10px 16px;
   border-radius: 999px;
   background: rgba(40, 40, 44, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -189,7 +189,7 @@ const lineNumbers = defineModel('lineNumbers')
 .group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .label {
