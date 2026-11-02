@@ -1,17 +1,17 @@
 English | [简体中文](README.zh-CN.md)
 
-# cpp-shot
+# Matu
 
-Turn C++ code into a beautiful image — copy it in one click and share it anywhere.
+Turn code into a beautiful image — copy it in one click and share it anywhere.
 
 ![Screenshot](docs/screenshot.png)
 
-**Live demo: <https://JohnSmitho91p8.github.io/cpp-shot/>**
+**Live demo: <https://JohnSmitho91p8.github.io/matu/>**
 
 ## Features
 
 - **Edit in place** — type or paste code right on the card; what you see is what you export
-- **C++ syntax highlighting** powered by [Shiki](https://shiki.style), the same engine as VS Code
+- **Syntax highlighting** powered by [Shiki](https://shiki.style), the same engine as VS Code. C++ is supported today; more languages are coming
 - **4 code themes** (2 dark, 2 light) and **5 gradient backgrounds**, or no background at all
 - **3 padding sizes** and a line-number toggle
 - **Good CJK support** — JetBrains Mono for code and LXGW WenKai Mono for Chinese comments, all self-hosted
@@ -32,7 +32,7 @@ Requires Node.js 20.19+ (or 22.12+).
 
 ```bash
 npm install
-npm run dev      # then open http://localhost:5173/cpp-shot/
+npm run dev      # then open http://localhost:5173/matu/
 npm run build    # production build in dist/
 npm run preview  # preview the production build
 ```

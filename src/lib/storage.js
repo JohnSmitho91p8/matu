@@ -1,4 +1,4 @@
-const KEY = 'cpp-shot:settings'
+const KEY = 'matu:settings'
 
 // 读不到、数据损坏或值不合法时，都退回默认值
 export function loadSettings(defaults, validators) {
