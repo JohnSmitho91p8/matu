@@ -1,6 +1,7 @@
 import { sampleCode } from '../i18n'
+import { DEFAULT_LANGUAGE, languageById } from './languages'
 
-export const DEFAULT_FILENAME = 'main.cpp'
+export const DEFAULT_FILENAME = languageById(DEFAULT_LANGUAGE).filename
 
 // 背景到窗口的距离（px）
 export const PADDINGS = [
@@ -17,4 +18,9 @@ export const DEFAULT_SETTINGS = {
   lineNumbers: true,
   code: sampleCode(),
   filename: DEFAULT_FILENAME,
+  // 代码语言：'auto' 表示自动识别，否则是手动锁定的语言；detectedLanguage 是自动识别的结果
+  language: 'auto',
+  detectedLanguage: DEFAULT_LANGUAGE,
+  // 文件名是否被用户改过（没改过就跟随语言）
+  filenameEdited: false,
 }

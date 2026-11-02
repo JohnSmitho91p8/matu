@@ -2,8 +2,12 @@
 import { BACKGROUNDS } from '../config/backgrounds'
 import { THEMES } from '../config/themes'
 import { PADDINGS } from '../config/defaults'
+import CodeLanguagePicker from './CodeLanguagePicker.vue'
 import { t } from '../i18n'
 
+defineProps({ detectedLanguage: { type: String, required: true } })
+
+const language = defineModel('language')
 const theme = defineModel('theme')
 const background = defineModel('background')
 const padding = defineModel('padding')
@@ -12,6 +16,11 @@ const lineNumbers = defineModel('lineNumbers')
 
 <template>
   <div class="toolbar" role="toolbar" :aria-label="t('toolbar.label')">
+    <div class="group">
+      <span class="label">{{ t('toolbar.language') }}</span>
+      <CodeLanguagePicker v-model="language" :detected="detectedLanguage" />
+    </div>
+    <div class="divider"></div>
     <div class="group">
       <span class="label">{{ t('toolbar.theme') }}</span>
       <button

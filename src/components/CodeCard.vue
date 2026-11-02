@@ -2,18 +2,18 @@
 import { computed, ref } from 'vue'
 import CodeEditor from './CodeEditor.vue'
 import { t } from '../i18n'
-import { DEFAULT_FILENAME } from '../config/defaults'
 
 const props = defineProps({
   code: { type: String, required: true },
   filename: { type: String, required: true },
+  lang: { type: String, required: true },
   theme: { type: Object, required: true },
   // null 表示无背景
   background: { type: Object, default: null },
   padding: { type: Number, required: true },
   lineNumbers: { type: Boolean, default: true },
 })
-const emit = defineEmits(['update:code', 'update:filename'])
+const emit = defineEmits(['update:code', 'update:filename', 'reset-filename', 'paste-code'])
 
 // 导出的就是这个元素
 const cardEl = ref(null)
@@ -26,8 +26,8 @@ const cardStyle = computed(() => ({
 }))
 
 function onFilenameBlur(e) {
-  // 清空后恢复默认文件名
-  if (!props.filename.trim()) emit('update:filename', DEFAULT_FILENAME)
+  // 清空后恢复为跟随语言的文件名
+  if (!props.filename.trim()) emit('reset-filename')
   e.target.scrollLeft = 0
 }
 </script>
@@ -60,8 +60,10 @@ function onFilenameBlur(e) {
       <CodeEditor
         :model-value="code"
         :theme="theme.id"
+        :lang="lang"
         :line-numbers="lineNumbers"
         @update:model-value="emit('update:code', $event)"
+        @paste-code="emit('paste-code')"
       />
     </div>
   </div>

@@ -6,9 +6,10 @@ import { getHighlighter, highlightLines, getCommentColor } from '../lib/highligh
 const props = defineProps({
   modelValue: { type: String, default: '' },
   theme: { type: String, required: true },
+  lang: { type: String, required: true },
   lineNumbers: { type: Boolean, default: true },
 })
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'paste-code'])
 
 const textareaEl = ref(null)
 const highlighter = ref(null)
@@ -47,7 +48,7 @@ function renderQuick() {
 function renderFull() {
   if (!highlighter.value) return
   cachedLines = lines.value
-  cachedTokens = highlightLines(highlighter.value, props.modelValue, props.theme)
+  cachedTokens = highlightLines(highlighter.value, props.modelValue, props.theme, props.lang)
   lineTokens.value = cachedTokens
   commentColor.value = getCommentColor(highlighter.value, props.theme)
 }
@@ -66,7 +67,7 @@ watch(
   },
   { immediate: true },
 )
-watch(() => props.theme, renderFull)
+watch(() => [props.theme, props.lang], renderFull)
 
 onMounted(async () => {
   highlighter.value = await getHighlighter()
@@ -95,6 +96,7 @@ function onPaste(e) {
   if (text == null) return
   e.preventDefault()
   insertText(text.replace(/\r\n?/g, '\n').replace(/\t/g, '    '))
+  emit('paste-code')
 }
 
 function onInput(e) {

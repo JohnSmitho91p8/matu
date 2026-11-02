@@ -9,6 +9,8 @@ import { isSampleCode, lang, sampleCode, t, useDocumentLang } from './i18n'
 import { THEMES } from './config/themes'
 import { BACKGROUNDS } from './config/backgrounds'
 import { DEFAULT_SETTINGS, PADDINGS } from './config/defaults'
+import { isCodeLanguage, isDefaultFilename, languageById } from './config/languages'
+import { changeRatio, detectLanguage } from './lib/detectLanguage'
 import { loadSettings, saveSettings } from './lib/storage'
 
 const settings = reactive(
@@ -19,9 +21,63 @@ const settings = reactive(
     lineNumbers: (v) => typeof v === 'boolean',
     code: (v) => typeof v === 'string',
     filename: (v) => typeof v === 'string' && v.trim() !== '',
+    language: (v) => v === 'auto' || isCodeLanguage(v),
+    detectedLanguage: isCodeLanguage,
+    filenameEdited: (v) => typeof v === 'boolean',
   }),
 )
+// 旧版本保存的文件名没有「是否改过」的记录：不是默认名就认为是用户改过的
+if (!settings.filenameEdited && !isDefaultFilename(settings.filename)) settings.filenameEdited = true
+
 useDocumentLang()
+
+// ---- 代码语言 ----
+const resolvedLanguage = computed(() =>
+  settings.language === 'auto' ? settings.detectedLanguage : settings.language,
+)
+
+function detect() {
+  if (settings.language !== 'auto') return
+  const found = detectLanguage(settings.code)
+  if (found) settings.detectedLanguage = found
+}
+
+// 只在粘贴、或内容大幅变化（超过 50%）时重新识别，逐字打字不会触发
+let lastCode = settings.code
+watch(
+  () => settings.code,
+  (code) => {
+    const ratio = changeRatio(lastCode, code)
+    lastCode = code
+    if (code.trim() && ratio > 0.5) detect()
+  },
+)
+// 切回「自动」时立刻识别一次
+watch(
+  () => settings.language,
+  (value) => {
+    if (value === 'auto') detect()
+  },
+)
+
+// 文件名没被改过时跟随语言
+watch(
+  resolvedLanguage,
+  (id) => {
+    if (!settings.filenameEdited) settings.filename = languageById(id).filename
+  },
+  { immediate: true },
+)
+
+function onFilenameInput(value) {
+  settings.filename = value
+  settings.filenameEdited = true
+}
+
+function resetFilename() {
+  settings.filenameEdited = false
+  settings.filename = languageById(resolvedLanguage.value).filename
+}
 
 // 代码还是默认示例时，示例的注释跟随界面语言；用户自己改过的代码不动
 function followSample() {
@@ -91,7 +147,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       <CodeCard
         ref="card"
         v-model:code="settings.code"
-        v-model:filename="settings.filename"
+        :filename="settings.filename"
+        :lang="resolvedLanguage"
+        @update:filename="onFilenameInput"
+        @reset-filename="resetFilename"
+        @paste-code="detect"
         :theme="theme"
         :background="background"
         :padding="padding"
@@ -99,6 +159,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       />
     </main>
     <Toolbar
+      v-model:language="settings.language"
+      :detected-language="settings.detectedLanguage"
       v-model:theme="settings.theme"
       v-model:background="settings.background"
       v-model:padding="settings.padding"
