@@ -104,7 +104,14 @@ function onPaste(e) {
   // 粘贴时选中了全部内容，等于换成一段全新的代码
   const el = textareaEl.value
   const replacedAll = el.value.length > 0 && el.selectionStart === 0 && el.selectionEnd === el.value.length
-  insertText(text.replace(/\r\n?/g, '\n').replace(/\t/g, '    '))
+  // 去掉开头和结尾整行空白的行（中间的空行保留，首行自己的缩进也保留）
+  const cleaned = text
+    .replace(/\r\n?/g, '\n')
+    .replace(/\t/g, '    ')
+    .replace(/^(?:[^\S\n]*\n)+/, '')
+    .replace(/(?:\n[^\S\n]*)+$/, '')
+  if (!cleaned.trim()) return
+  insertText(cleaned)
   emit('paste-code', { replacedAll })
 }
 
