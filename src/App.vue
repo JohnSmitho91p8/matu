@@ -119,10 +119,7 @@ watch(settings, () => saveSettings({ ...settings }))
 
 const theme = computed(() => THEMES.find((t) => t.id === settings.theme))
 const background = computed(() => BACKGROUNDS.find((b) => b.id === settings.background) ?? null)
-const padding = computed(() => {
-  const p = PADDINGS.find((p) => p.id === settings.padding)
-  return isMobile.value ? p.mobilePx : p.px
-})
+const padding = computed(() => PADDINGS.find((p) => p.id === settings.padding).px)
 // 开关打开但文字为空时，不显示水印
 const watermark = computed(() => (settings.watermarkEnabled ? settings.watermarkText.trim() : ''))
 const fontSize = computed(() => FONT_SIZES.find((f) => f.id === settings.fontSize).px)
@@ -263,13 +260,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   flex: 1 0 auto;
   display: flex;
   padding: 24px max(24px, env(safe-area-inset-right)) 120px max(24px, env(safe-area-inset-left));
-  /* 窄屏上卡片放不下时可横向滚动 */
-  overflow-x: auto;
+  /* 卡片比可用宽度宽时会整体缩小，不需要横向滚动 */
+  overflow-x: hidden;
 }
 
-/* 手机：两侧各留 16px；底部留出工具栏的高度和 iPhone 底部横条，卡片不会被遮住 */
+/* 手机：两侧各留 16px（卡片缩小到刚好放进这个宽度）；底部留出工具栏的高度和 iPhone 底部横条，卡片不会被遮住 */
 .stage.mobile {
   padding: 8px max(16px, env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  overflow-x: hidden;
 }
 </style>

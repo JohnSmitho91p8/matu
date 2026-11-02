@@ -22,7 +22,8 @@ export async function renderBlob(cardEl, { noBackground = false, scale = SCALE_D
     type: 'image/png',
     width: cardEl.offsetWidth + extra * 2,
     height: cardEl.offsetHeight + extra * 2,
-    style: noBackground ? { padding: `${EXPORT_PAD_NO_BG}px` } : undefined,
+    // 屏幕上卡片可能被缩小显示，导出时始终按原始尺寸
+    style: { transform: 'none', ...(noBackground ? { padding: `${EXPORT_PAD_NO_BG}px` } : {}) },
     // 编辑框文字本来就是透明的，导出时直接去掉，光标和选区都不会出现
     filter: (node) => node.tagName !== 'TEXTAREA',
   })

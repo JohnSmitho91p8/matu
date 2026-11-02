@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CodeEditor from './CodeEditor.vue'
 import { BASE_FONT_SIZE } from '../config/defaults'
 import { t } from '../i18n'
@@ -21,15 +21,47 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:code', 'update:filename', 'reset-filename', 'paste-code', 'toggle-line'])
 
-// 导出的就是这个元素
+// 导出的就是这个元素（始终按原始尺寸导出，屏幕上的缩放不影响它）
 const cardEl = ref(null)
+const fitEl = ref(null)
 defineExpose({ cardEl })
+
+// 卡片宽度跟随最长的一行，从不换行。比可用区域宽时，整张卡片等比例缩小到刚好放下：
+// 缩小只用 transform，卡片自身的排版和不缩小时完全一致；外层 .fit 按缩小后的尺寸占位
+const fit = ref({ scale: 1, width: 0, height: 0 })
+
+function measure() {
+  const card = cardEl.value
+  const host = fitEl.value?.parentElement
+  if (!card || !host) return
+  const cs = getComputedStyle(host)
+  const available = host.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+  const width = card.offsetWidth
+  const height = card.offsetHeight
+  const scale = width > 0 ? Math.min(1, available / width) : 1
+  fit.value = { scale, width: width * scale, height: height * scale }
+}
+
+let observer
+onMounted(() => {
+  observer = new ResizeObserver(measure)
+  observer.observe(cardEl.value)
+  observer.observe(fitEl.value.parentElement)
+  measure()
+})
+onBeforeUnmount(() => observer?.disconnect())
+
+const fitStyle = computed(() =>
+  fit.value.width ? { width: `${fit.value.width}px`, height: `${fit.value.height}px` } : undefined,
+)
+const cardTransform = computed(() => (fit.value.scale < 1 ? `scale(${fit.value.scale})` : undefined))
 
 // 无背景时四周留 16px 透明边，避免导出时阴影被裁掉
 const cardStyle = computed(() => ({
   background: props.background ? props.background.value : 'none',
   padding: `${props.background ? props.padding : 16}px`,
   '--scale': props.fontSize / BASE_FONT_SIZE,
+  transform: cardTransform.value,
 }))
 
 // 署名：12px，随字号档位等比例变化
@@ -52,7 +84,8 @@ function onFilenameBlur(e) {
 </script>
 
 <template>
-  <div ref="cardEl" class="card" :class="{ mobile }" :style="cardStyle">
+  <div ref="fitEl" class="fit" :class="{ mobile }" :style="fitStyle">
+  <div ref="cardEl" class="card" :style="cardStyle">
     <div
       class="window"
       :style="{ background: theme.bg, '--fg': theme.fg, '--scale': fontSize / BASE_FONT_SIZE }"
@@ -96,22 +129,26 @@ function onFilenameBlur(e) {
       {{ watermark }}
     </div>
   </div>
+  </div>
 </template>
 
 <style scoped>
-.card {
-  position: relative;
-  min-width: 480px;
-  max-width: 960px;
+.fit {
   flex-shrink: 0;
   margin: auto;
 }
 
-/* 手机：卡片宽度 = 屏幕宽度 - 32px（两侧的 16px 在页面里），长行自动换行 */
-.card.mobile {
-  width: 100%;
-  min-width: 0;
-  max-width: none;
+/* 手机：缩小后的卡片不高，贴着顶部放，不要在屏幕中间留一大片空白 */
+.fit.mobile {
+  margin: 0 auto;
+}
+
+/* 宽度跟随最长的一行（不换行），最小 480px；没有最大宽度 */
+.card {
+  position: relative;
+  width: max-content;
+  min-width: 480px;
+  transform-origin: 0 0;
 }
 
 .window {

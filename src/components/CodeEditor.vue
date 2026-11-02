@@ -126,7 +126,9 @@ function lineIndexAt(e) {
   if (!props.lineNumbers) return -1
   const layer = layerEl.value
   const rect = layer.getBoundingClientRect()
-  const gutterRight = parseFloat(getComputedStyle(layer).paddingLeft) - 4
+  // 整张卡片可能被缩小显示，屏幕上的尺寸要换算回排版尺寸
+  const zoom = rect.width / layer.offsetWidth || 1
+  const gutterRight = (parseFloat(getComputedStyle(layer).paddingLeft) - 4) * zoom
   const x = e.clientX - rect.left
   if (x < 0 || x > gutterRight) return -1
   const rows = layer.children
@@ -195,7 +197,7 @@ function onClick(e) {
       autocomplete="off"
       autocapitalize="off"
       autocorrect="off"
-      wrap="soft"
+      wrap="off"
       :aria-label="t('editor.label')"
       @input="onInput"
       @keydown="onKeydown"
@@ -222,9 +224,7 @@ function onClick(e) {
   font-variant-ligatures: none;
   font-kerning: none;
   letter-spacing: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: normal;
+  white-space: pre;
 }
 
 /* 关闭行号：不再依赖 --gutter，直接把左内边距写成和右侧一样的 20px */
@@ -256,8 +256,6 @@ function onClick(e) {
   font-kerning: inherit;
   letter-spacing: inherit;
   white-space: inherit;
-  overflow-wrap: inherit;
-  word-break: inherit;
 }
 
 /* z-index 让行高亮的色带（z-index: -1）留在这一层里面，不会沉到窗口背景下面 */
@@ -323,7 +321,7 @@ function onClick(e) {
   left: 0;
   /* iOS 在输入框字号小于 16px 时，聚焦会自动放大页面。
      所以手机上编辑框用 ≥16px 的字号（--k 倍），再整体缩小 1/--k 贴回高亮层：
-     字号、内边距、宽高都按同一个倍数放大，换行位置和高亮层完全一致，
+     字号、内边距、宽高都按同一个倍数放大，文字位置和高亮层完全一致，
      导出的图片不用编辑框，不受影响。--k 为 1 时（电脑、17px 字号）这些都不起作用 */
   width: calc(100% * var(--k, 1));
   height: calc(100% * var(--k, 1));
