@@ -3,9 +3,10 @@
 Usage (needs `pip install fonttools brotli`):
   python scripts/build-fonts.py <LXGWWenKaiMono-Regular.ttf> <D2Coding-Regular.ttf>
 
-Both fonts are SIL OFL 1.1. Every glyph that is 0.5em / 1em wide is re-spaced to
-0.6em / 1.2em (glyph shifted to stay centred) so that one CJK character is exactly
-two cells of JetBrains Mono (0.6em) and columns stay aligned in mixed text.
+Both fonts are SIL OFL 1.1. CJK glyphs are enlarged with `size-adjust` so they fill their
+two-cell width, and each glyph's advance is re-spaced (glyph shifted to stay centred) so that
+advance * size-adjust is exactly 1.2em / 0.6em: one CJK character is two cells of JetBrains
+Mono (0.6em) and columns stay aligned in mixed text.
 """
 import os
 import subprocess
@@ -30,8 +31,14 @@ def decode_table(encoding, leads, trails):
     return out
 
 
-def respace(font):
-    """Widen 0.5em -> 0.6em and 1em -> 1.2em advances, keeping glyphs centred."""
+# size-adjust per script, tuned by eye against JetBrains Mono at the same font size
+SCALE_HAN = 1.15   # LXGW WenKai Mono: Chinese characters and CJK punctuation
+SCALE_KANA = 1.2   # LXGW WenKai Mono: kana are drawn smaller inside the em box
+SCALE_HANGUL = 1.1  # D2Coding: strokes are heavier, so a smaller boost
+
+
+def respace(font, scale):
+    """Set advances so that advance * scale = 0.6em (half-width) / 1.2em (full-width)."""
     glyph_set = font.getGlyphSet()
     glyf, hmtx = font['glyf'], font['hmtx']
     new = {}
@@ -39,7 +46,8 @@ def respace(font):
         adv, lsb = hmtx[name]
         if adv not in (500, 1000):
             continue
-        dx = adv // 10
+        target = round(adv * 1.2 / scale)
+        dx = (target - adv) // 2
         pen = TTGlyphPen(glyph_set)
         glyph_set[name].draw(TransformPen(pen, (1, 0, 0, 1, dx, 0)))
         glyph = pen.glyph()
@@ -58,7 +66,7 @@ def write_chunks(src, family, subdir, css_name, chunks):
     for f in os.listdir(out_dir):
         os.remove(os.path.join(out_dir, f))
     css = []
-    for i, cs in enumerate(chunks):
+    for i, (cs, scale) in enumerate(chunks):
         uni = ','.join(f'U+{c:X}' for c in cs)
         with tempfile.TemporaryDirectory() as tmp:
             tmp_ttf = os.path.join(tmp, 'c.ttf')
@@ -68,11 +76,11 @@ def write_chunks(src, family, subdir, css_name, chunks):
                 check=True,
             )
             font = TTFont(tmp_ttf)
-            respace(font)
+            respace(font, scale)
             font.flavor = 'woff2'
             font.save(os.path.join(out_dir, f'{i}.woff2'))
         css.append(
-            f"@font-face {{\n  font-family: '{family}';\n  font-weight: 400;\n  font-display: swap;\n"
+            f"@font-face {{\n  font-family: '{family}';\n  font-weight: 400;\n  font-display: swap;\n  size-adjust: {scale * 100:g}%;\n"
             f"  src: url('./{subdir}/{i}.woff2') format('woff2');\n  unicode-range: {uni.replace(',', ', ')};\n}}"
         )
     with open(os.path.join(FONTS_DIR, css_name), 'w') as fh:
@@ -99,14 +107,15 @@ def main(wenkai, d2coding):
     gb = keep(wk, decode_table('gb2312', range(0xB0, 0xF8), range(0xA1, 0xFF)))
     jis1 = [c for c in keep(wk, decode_table('euc_jp', range(0xB0, 0xD0), range(0xA1, 0xFF))) if c not in set(gb)]
     write_chunks(wenkai, 'LXGW WenKai Mono', 'wenkai', 'wenkai.css',
-                 [sym, kana] + split(gb, 300) + split(jis1, 300))
+                 [(sym, SCALE_HAN), (kana, SCALE_KANA)]
+                 + [(c, SCALE_HAN) for c in split(gb, 300) + split(jis1, 300)])
 
     ksx = keep(d2, decode_table('euc_kr', range(0xB0, 0xC9), range(0xA1, 0xFF)))
     ksx = [c for c in ksx if 0xAC00 <= c <= 0xD7A3]
     rest = [c for c in range(0xAC00, 0xD7A4) if c in d2 and c not in set(ksx)]
     jamo = keep(d2, range(0x3131, 0x318F))
     write_chunks(d2coding, 'D2Coding', 'd2coding', 'd2coding.css',
-                 [jamo] + split(ksx, 300) + split(rest, 1000))
+                 [(c, SCALE_HANGUL) for c in [jamo] + split(ksx, 300) + split(rest, 1000)])
 
 
 if __name__ == '__main__':
