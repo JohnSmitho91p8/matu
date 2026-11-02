@@ -11,6 +11,7 @@ import { BACKGROUNDS } from './config/backgrounds'
 import { DEFAULT_SETTINGS, PADDINGS } from './config/defaults'
 import { isCodeLanguage, isDefaultFilename, languageById } from './config/languages'
 import { changeRatio, detectLanguage } from './lib/detectLanguage'
+import { remapHighlights, toggleHighlight } from './lib/lineHighlights'
 import { loadSettings, saveSettings } from './lib/storage'
 
 const settings = reactive(
@@ -24,6 +25,7 @@ const settings = reactive(
     language: (v) => v === 'auto' || isCodeLanguage(v),
     detectedLanguage: isCodeLanguage,
     filenameEdited: (v) => typeof v === 'boolean',
+    highlightedLines: (v) => Array.isArray(v) && v.every((n) => Number.isInteger(n) && n >= 0),
   }),
 )
 // 旧版本保存的文件名没有「是否改过」的记录：不是默认名就认为是用户改过的
@@ -47,6 +49,8 @@ let lastCode = settings.code
 watch(
   () => settings.code,
   (code) => {
+    // 编辑时让行高亮跟着原来那一行移动
+    settings.highlightedLines = remapHighlights(settings.highlightedLines, lastCode, code)
     const ratio = changeRatio(lastCode, code)
     lastCode = code
     if (code.trim() && ratio > 0.5) detect()
@@ -68,6 +72,25 @@ watch(
   },
   { immediate: true },
 )
+
+// ---- 行高亮 ----
+let highlightAnchor = null
+
+function onToggleLine({ index, shift }) {
+  settings.highlightedLines = toggleHighlight(settings.highlightedLines, index, highlightAnchor, shift)
+  highlightAnchor = index
+}
+
+function clearHighlights() {
+  settings.highlightedLines = []
+  highlightAnchor = null
+}
+
+// 粘贴：选中全部内容再粘贴，等于换了一段新代码，清除高亮；然后重新识别语言
+function onPasteCode({ replacedAll }) {
+  if (replacedAll) clearHighlights()
+  detect()
+}
 
 function onFilenameInput(value) {
   settings.filename = value
@@ -151,7 +174,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         :lang="resolvedLanguage"
         @update:filename="onFilenameInput"
         @reset-filename="resetFilename"
-        @paste-code="detect"
+        :highlighted="settings.highlightedLines"
+        @paste-code="onPasteCode"
+        @toggle-line="onToggleLine"
         :theme="theme"
         :background="background"
         :padding="padding"
@@ -161,6 +186,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     <Toolbar
       v-model:language="settings.language"
       :detected-language="settings.detectedLanguage"
+      :highlight-count="settings.highlightedLines.length"
+      @clear-highlight="clearHighlights"
       v-model:theme="settings.theme"
       v-model:background="settings.background"
       v-model:padding="settings.padding"

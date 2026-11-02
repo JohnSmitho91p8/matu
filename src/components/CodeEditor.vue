@@ -8,10 +8,14 @@ const props = defineProps({
   theme: { type: String, required: true },
   lang: { type: String, required: true },
   lineNumbers: { type: Boolean, default: true },
+  // 被高亮的行号（0 开始）
+  highlighted: { type: Array, default: () => [] },
 })
-const emit = defineEmits(['update:modelValue', 'paste-code'])
+const emit = defineEmits(['update:modelValue', 'paste-code', 'toggle-line'])
 
 const textareaEl = ref(null)
+const layerEl = ref(null)
+const hoverLine = ref(-1)
 const highlighter = ref(null)
 const commentColor = ref(null)
 
@@ -21,6 +25,7 @@ let cachedTokens = []
 const lineTokens = ref([])
 
 const lines = computed(() => props.modelValue.split('\n'))
+const highlightedSet = computed(() => new Set(props.highlighted))
 const digits = computed(() => Math.max(2, String(lines.value.length).length))
 
 // 输入后立刻渲染：与缓存相同的首尾行沿用旧颜色，改动的行先显示为纯文本，
@@ -95,27 +100,72 @@ function onPaste(e) {
   const text = e.clipboardData?.getData('text/plain')
   if (text == null) return
   e.preventDefault()
+  // 粘贴时选中了全部内容，等于换成一段全新的代码
+  const el = textareaEl.value
+  const replacedAll = el.value.length > 0 && el.selectionStart === 0 && el.selectionEnd === el.value.length
   insertText(text.replace(/\r\n?/g, '\n').replace(/\t/g, '    '))
-  emit('paste-code')
+  emit('paste-code', { replacedAll })
 }
 
 function onInput(e) {
   emit('update:modelValue', e.target.value)
+}
+
+// ---- 点击行号切换高亮 ----
+// 编辑框盖在高亮层上面，所以用鼠标位置反查：落在行号那一列，就找出对应的行
+function lineIndexAt(e) {
+  if (!props.lineNumbers) return -1
+  const layer = layerEl.value
+  const rect = layer.getBoundingClientRect()
+  const gutterRight = parseFloat(getComputedStyle(layer).paddingLeft) - 4
+  const x = e.clientX - rect.left
+  if (x < 0 || x > gutterRight) return -1
+  const rows = layer.children
+  let lo = 0
+  let hi = rows.length - 1
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1
+    const r = rows[mid].getBoundingClientRect()
+    if (e.clientY < r.top) hi = mid - 1
+    else if (e.clientY >= r.bottom) lo = mid + 1
+    else return mid
+  }
+  return -1
+}
+
+function onMouseMove(e) {
+  hoverLine.value = lineIndexAt(e)
+}
+
+function onMouseDown(e) {
+  // 点在行号上不要把光标放进编辑框
+  if (lineIndexAt(e) >= 0) e.preventDefault()
+}
+
+function onClick(e) {
+  const index = lineIndexAt(e)
+  if (index >= 0) emit('toggle-line', { index, shift: e.shiftKey })
 }
 </script>
 
 <template>
   <div
     class="editor"
-    :class="{ 'no-lineno': !lineNumbers }"
+    :class="{ 'no-lineno': !lineNumbers, 'has-hl': highlighted.length > 0, 'on-gutter': hoverLine >= 0 }"
     :style="{
       '--digits': digits,
       '--lineno': commentColor ? `color-mix(in srgb, ${commentColor} 60%, transparent)` : 'inherit',
     }"
   >
     <!-- 高亮层：撑开卡片的宽高 -->
-    <div class="layer" aria-hidden="true">
-      <div v-for="(tokens, i) in lineTokens" :key="i" class="line" :data-n="i + 1"><span
+    <div ref="layerEl" class="layer" aria-hidden="true">
+      <div
+        v-for="(tokens, i) in lineTokens"
+        :key="i"
+        class="line"
+        :class="{ hl: highlightedSet.has(i), hover: hoverLine === i }"
+        :data-n="i + 1"
+      ><span
           v-for="(t, j) in tokens"
           :key="j"
           :style="{
@@ -139,6 +189,10 @@ function onInput(e) {
       @input="onInput"
       @keydown="onKeydown"
       @paste="onPaste"
+      @mousemove="onMouseMove"
+      @mouseleave="hoverLine = -1"
+      @mousedown="onMouseDown"
+      @click="onClick"
     ></textarea>
   </div>
 </template>
@@ -193,8 +247,10 @@ function onInput(e) {
   word-break: inherit;
 }
 
+/* z-index 让行高亮的色带（z-index: -1）留在这一层里面，不会沉到窗口背景下面 */
 .layer {
   position: relative;
+  z-index: 0;
   pointer-events: none;
   user-select: none;
 }
@@ -202,6 +258,39 @@ function onInput(e) {
 .line {
   position: relative;
   min-height: 1.6em;
+  transition: opacity 0.15s;
+}
+
+/* 有行被高亮时：其余行变暗，被高亮的行加一条淡色带，左右延伸到窗口边缘 */
+.has-hl .line {
+  opacity: 0.35;
+}
+
+.has-hl .line.hl {
+  opacity: 1;
+}
+
+.line.hl::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * (var(--pad-x) + var(--gutter)));
+  right: calc(-1 * var(--pad-x));
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  z-index: -1;
+}
+
+.no-lineno .line.hl::after {
+  left: calc(-1 * var(--pad-x));
+}
+
+.line.hover::before {
+  color: color-mix(in srgb, var(--fg) 60%, transparent);
+}
+
+.on-gutter .input {
+  cursor: pointer;
 }
 
 .line::before {

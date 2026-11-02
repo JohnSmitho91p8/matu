@@ -23,4 +23,6 @@ export const DEFAULT_SETTINGS = {
   detectedLanguage: DEFAULT_LANGUAGE,
   // 文件名是否被用户改过（没改过就跟随语言）
   filenameEdited: false,
+  // 被高亮的行号（0 开始）
+  highlightedLines: [],
 }

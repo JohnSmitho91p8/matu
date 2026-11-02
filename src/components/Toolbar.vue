@@ -5,7 +5,11 @@ import { PADDINGS } from '../config/defaults'
 import CodeLanguagePicker from './CodeLanguagePicker.vue'
 import { t } from '../i18n'
 
-defineProps({ detectedLanguage: { type: String, required: true } })
+defineProps({
+  detectedLanguage: { type: String, required: true },
+  highlightCount: { type: Number, default: 0 },
+})
+defineEmits(['clear-highlight'])
 
 const language = defineModel('language')
 const theme = defineModel('theme')
@@ -93,6 +97,10 @@ const lineNumbers = defineModel('lineNumbers')
         <i></i>
       </button>
     </div>
+    <template v-if="highlightCount > 0">
+      <div class="divider"></div>
+      <button class="clear" @click="$emit('clear-highlight')">{{ t('toolbar.clearHighlight') }}</button>
+    </template>
   </div>
 </template>
 
@@ -243,6 +251,26 @@ const lineNumbers = defineModel('lineNumbers')
   border: 0;
   background: rgba(255, 255, 255, 0.2);
   position: relative;
+}
+
+.clear {
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.clear:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.clear:active {
+  transform: scale(0.96);
 }
 
 .seg button:disabled {

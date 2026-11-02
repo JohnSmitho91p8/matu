@@ -12,8 +12,9 @@ const props = defineProps({
   background: { type: Object, default: null },
   padding: { type: Number, required: true },
   lineNumbers: { type: Boolean, default: true },
+  highlighted: { type: Array, default: () => [] },
 })
-const emit = defineEmits(['update:code', 'update:filename', 'reset-filename', 'paste-code'])
+const emit = defineEmits(['update:code', 'update:filename', 'reset-filename', 'paste-code', 'toggle-line'])
 
 // 导出的就是这个元素
 const cardEl = ref(null)
@@ -62,8 +63,10 @@ function onFilenameBlur(e) {
         :theme="theme.id"
         :lang="lang"
         :line-numbers="lineNumbers"
+        :highlighted="highlighted"
         @update:model-value="emit('update:code', $event)"
-        @paste-code="emit('paste-code')"
+        @paste-code="emit('paste-code', $event)"
+        @toggle-line="emit('toggle-line', $event)"
       />
     </div>
   </div>
