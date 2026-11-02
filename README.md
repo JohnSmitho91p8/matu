@@ -11,11 +11,13 @@ Turn code into a beautiful image — copy it in one click and share it anywhere.
 ## Features
 
 - **Edit in place** — type or paste code right on the card; what you see is what you export
-- **Syntax highlighting** powered by [Shiki](https://shiki.style), the same engine as VS Code. C++ is supported today; more languages are coming
-- **4 code themes** (2 dark, 2 light) and **5 gradient backgrounds**, or no background at all
-- **3 padding sizes** and a line-number toggle
+- **Syntax highlighting** powered by [Shiki](https://shiki.style), the same engine as VS Code. Supports **C++, C, Python, Java and JavaScript**, with automatic language detection (or pick one manually)
+- **Line highlighting** — click a line number to spotlight it, Shift-click to select a range; every other line fades out. Perfect for pointing at the important part
+- **4 code themes** with live previews, **5 gradient backgrounds** or no background at all, **3 padding sizes**, **3 font sizes** and a line-number toggle
+- **Optional signature** — add your handle (for example `@yourname`) to the corner of the image
 - **Good CJK support** — JetBrains Mono for code, LXGW WenKai Mono for Chinese and Japanese comments and D2Coding for Korean, all self-hosted and aligned to the same character grid
 - **One-click copy** to the clipboard (2× resolution), or download as PNG
+- **Works great on iPhone** — a touch-friendly layout with a bottom toolbar, and a Share button that opens the system share sheet (save to Photos, send to a chat, AirDrop). If sharing isn't available, long-press the preview image to save it
 - **Multilingual interface** — English, 简体中文, 日本語 and 한국어 (picked from your browser language, switchable any time)
 - **Remembers your settings and code** in the browser's local storage
 - Runs entirely in the browser; nothing is uploaded
@@ -37,6 +39,8 @@ npm run dev      # then open http://localhost:5173/matu/
 npm run build    # production build in dist/
 npm run preview  # preview the production build
 ```
+
+To try it on a phone on the same Wi-Fi, run `npm run dev -- --host` and open the `Network` address it prints. (Sharing and copying images need HTTPS, so test those on the deployed site.)
 
 ## Tech stack
 
