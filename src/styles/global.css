@@ -1,0 +1,31 @@
+@import '../assets/fonts/jetbrains-mono.css';
+@import '../assets/fonts/wenkai.css';
+
+:root {
+  --font-code: 'JetBrains Mono', 'LXGW WenKai Mono', monospace;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  background: #0f0f10;
+  color: #f2f2f3;
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
