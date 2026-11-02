@@ -8,7 +8,7 @@ import { copyImage, downloadImage } from './lib/exporter'
 import { isSampleCode, lang, sampleCode, t, useDocumentLang } from './i18n'
 import { THEMES } from './config/themes'
 import { BACKGROUNDS } from './config/backgrounds'
-import { DEFAULT_SETTINGS, FONT_SIZES, PADDINGS } from './config/defaults'
+import { DEFAULT_SETTINGS, FONT_SIZES, PADDINGS, WATERMARK_MAX_LENGTH } from './config/defaults'
 import { isCodeLanguage, isDefaultFilename, languageById } from './config/languages'
 import { changeRatio, detectLanguage } from './lib/detectLanguage'
 import { remapHighlights, toggleHighlight } from './lib/lineHighlights'
@@ -26,6 +26,8 @@ const settings = reactive(
     language: (v) => v === 'auto' || isCodeLanguage(v),
     detectedLanguage: isCodeLanguage,
     filenameEdited: (v) => typeof v === 'boolean',
+    watermarkEnabled: (v) => typeof v === 'boolean',
+    watermarkText: (v) => typeof v === 'string' && v.length <= WATERMARK_MAX_LENGTH,
     highlightedLines: (v) => Array.isArray(v) && v.every((n) => Number.isInteger(n) && n >= 0),
   }),
 )
@@ -115,6 +117,8 @@ watch(settings, () => saveSettings({ ...settings }))
 const theme = computed(() => THEMES.find((t) => t.id === settings.theme))
 const background = computed(() => BACKGROUNDS.find((b) => b.id === settings.background) ?? null)
 const padding = computed(() => PADDINGS.find((p) => p.id === settings.padding).px)
+// 开关打开但文字为空时，不显示水印
+const watermark = computed(() => (settings.watermarkEnabled ? settings.watermarkText.trim() : ''))
 const fontSize = computed(() => FONT_SIZES.find((f) => f.id === settings.fontSize).px)
 
 // ---- 导出 ----
@@ -183,6 +187,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         :background="background"
         :padding="padding"
         :font-size="fontSize"
+        :watermark="watermark"
         :line-numbers="settings.lineNumbers"
       />
     </main>
@@ -195,6 +200,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       v-model:background="settings.background"
       v-model:padding="settings.padding"
       v-model:font-size="settings.fontSize"
+      v-model:watermark-enabled="settings.watermarkEnabled"
+      v-model:watermark-text="settings.watermarkText"
       v-model:line-numbers="settings.lineNumbers"
     />
     <Toast :message="toastMessage" />

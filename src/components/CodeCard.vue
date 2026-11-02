@@ -13,6 +13,8 @@ const props = defineProps({
   background: { type: Object, default: null },
   padding: { type: Number, required: true },
   fontSize: { type: Number, default: BASE_FONT_SIZE },
+  // 署名文字，空字符串表示不显示
+  watermark: { type: String, default: '' },
   lineNumbers: { type: Boolean, default: true },
   highlighted: { type: Array, default: () => [] },
 })
@@ -26,6 +28,19 @@ defineExpose({ cardEl })
 const cardStyle = computed(() => ({
   background: props.background ? props.background.value : 'none',
   padding: `${props.background ? props.padding : 16}px`,
+  '--scale': props.fontSize / BASE_FONT_SIZE,
+}))
+
+// 署名：12px，随字号档位等比例变化
+const MARK_SIZE = 12
+const markLineHeight = computed(() => MARK_SIZE * (props.fontSize / BASE_FONT_SIZE) * 1.4)
+// 有背景时放在窗口下方的边距里；无背景、或边距太小放不下时，放进窗口内部右下角
+const markInside = computed(
+  () => !props.background || props.padding < markLineHeight.value + 16,
+)
+const markOutsideStyle = computed(() => ({
+  right: `${props.padding}px`,
+  bottom: `${(props.padding - markLineHeight.value) / 2}px`,
 }))
 
 function onFilenameBlur(e) {
@@ -71,12 +86,19 @@ function onFilenameBlur(e) {
         @paste-code="emit('paste-code', $event)"
         @toggle-line="emit('toggle-line', $event)"
       />
+      <div v-if="watermark && markInside" class="mark mark-inside" :style="{ color: theme.comment }">
+        {{ watermark }}
+      </div>
+    </div>
+    <div v-if="watermark && !markInside" class="mark mark-outside" :style="markOutsideStyle">
+      {{ watermark }}
     </div>
   </div>
 </template>
 
 <style scoped>
 .card {
+  position: relative;
   min-width: 480px;
   max-width: 960px;
   flex-shrink: 0;
@@ -90,6 +112,25 @@ function onFilenameBlur(e) {
   overflow: hidden;
   /* 切换主题时颜色平滑过渡 */
   transition: background-color 0.2s, color 0.2s;
+}
+
+.mark {
+  font-family: var(--font-ui);
+  font-size: calc(12px * var(--scale, 1));
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.mark-outside {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 在窗口里占一行，不会盖住代码 */
+.mark-inside {
+  margin-top: -8px;
+  padding: 0 20px 12px;
+  text-align: right;
 }
 
 .titlebar {

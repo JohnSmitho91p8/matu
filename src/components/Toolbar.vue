@@ -3,6 +3,7 @@ import { BACKGROUNDS } from '../config/backgrounds'
 import { THEMES } from '../config/themes'
 import { FONT_SIZES, PADDINGS } from '../config/defaults'
 import CodeLanguagePicker from './CodeLanguagePicker.vue'
+import WatermarkPicker from './WatermarkPicker.vue'
 import { t } from '../i18n'
 
 defineProps({
@@ -16,6 +17,8 @@ const theme = defineModel('theme')
 const background = defineModel('background')
 const padding = defineModel('padding')
 const fontSize = defineModel('fontSize')
+const watermarkEnabled = defineModel('watermarkEnabled')
+const watermarkText = defineModel('watermarkText')
 const lineNumbers = defineModel('lineNumbers')
 </script>
 
@@ -114,6 +117,10 @@ const lineNumbers = defineModel('lineNumbers')
       >
         <i></i>
       </button>
+    </div>
+    <div class="divider"></div>
+    <div class="group">
+      <WatermarkPicker v-model:enabled="watermarkEnabled" v-model:text="watermarkText" />
     </div>
     <template v-if="highlightCount > 0">
       <div class="divider"></div>

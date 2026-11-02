@@ -35,4 +35,9 @@ export const DEFAULT_SETTINGS = {
   filenameEdited: false,
   // 被高亮的行号（0 开始）
   highlightedLines: [],
+  // 署名水印
+  watermarkEnabled: false,
+  watermarkText: '',
 }
+
+export const WATERMARK_MAX_LENGTH = 30
