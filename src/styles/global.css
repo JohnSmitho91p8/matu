@@ -1,8 +1,9 @@
 @import '../assets/fonts/jetbrains-mono.css';
 @import '../assets/fonts/wenkai.css';
+@import '../assets/fonts/d2coding.css';
 
 :root {
-  --font-code: 'JetBrains Mono', 'LXGW WenKai Mono', monospace;
+  --font-code: 'JetBrains Mono', 'LXGW WenKai Mono', 'D2Coding', monospace;
   --font-ui: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
 }
 

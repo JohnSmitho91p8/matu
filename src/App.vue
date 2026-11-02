@@ -5,6 +5,7 @@ import CodeCard from './components/CodeCard.vue'
 import Toolbar from './components/Toolbar.vue'
 import Toast from './components/Toast.vue'
 import { copyImage, downloadImage } from './lib/exporter'
+import { isSampleCode, lang, sampleCode, t, useDocumentLang } from './i18n'
 import { THEMES } from './config/themes'
 import { BACKGROUNDS } from './config/backgrounds'
 import { DEFAULT_SETTINGS, PADDINGS } from './config/defaults'
@@ -20,6 +21,15 @@ const settings = reactive(
     filename: (v) => typeof v === 'string' && v.trim() !== '',
   }),
 )
+useDocumentLang()
+
+// 代码还是默认示例时，示例的注释跟随界面语言；用户自己改过的代码不动
+function followSample() {
+  if (isSampleCode(settings.code)) settings.code = sampleCode(lang.value)
+}
+followSample()
+watch(lang, followSample)
+
 watch(settings, () => saveSettings({ ...settings }))
 
 const theme = computed(() => THEMES.find((t) => t.id === settings.theme))
@@ -43,17 +53,17 @@ async function download() {
     await downloadImage(card.value.cardEl, settings.filename, exportOptions())
   } catch (e) {
     console.error(e)
-    toast('导出失败，请重试')
+    toast(t('toast.exportFailed'))
   }
 }
 
 async function copy() {
   try {
     await copyImage(card.value.cardEl, exportOptions())
-    toast('已复制，可以直接粘贴')
+    toast(t('toast.copied'))
   } catch (e) {
     console.error(e)
-    toast('复制失败，已改为下载图片')
+    toast(t('toast.copyFailed'))
     download()
   }
 }

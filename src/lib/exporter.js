@@ -1,6 +1,7 @@
 import { domToBlob } from 'modern-screenshot'
 
 const SCALE = 2
+const CODE_FONTS = ['JetBrains Mono', 'LXGW WenKai Mono', 'D2Coding']
 // 无背景时卡片四周只有 16px，容不下 0 20px 68px 的阴影，导出时临时加宽透明边
 const PAGE_PAD = 16
 const EXPORT_PAD_NO_BG = 80
@@ -8,6 +9,9 @@ const EXPORT_PAD_NO_BG = 80
 export async function renderBlob(cardEl, { noBackground = false } = {}) {
   // 先同步让编辑框失去焦点，再等字体，避免光标出现在图里
   document.activeElement?.blur?.()
+  // 字体按字符范围分包懒加载：先确保卡片里用到的字都已加载，再等其余字体
+  const text = cardEl.textContent
+  await Promise.all(CODE_FONTS.map((f) => document.fonts.load(`15px "${f}"`, text)))
   await document.fonts.ready
 
   const extra = noBackground ? EXPORT_PAD_NO_BG - PAGE_PAD : 0

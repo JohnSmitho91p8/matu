@@ -2,6 +2,7 @@
 import { BACKGROUNDS } from '../config/backgrounds'
 import { THEMES } from '../config/themes'
 import { PADDINGS } from '../config/defaults'
+import { t } from '../i18n'
 
 const theme = defineModel('theme')
 const background = defineModel('background')
@@ -10,49 +11,58 @@ const lineNumbers = defineModel('lineNumbers')
 </script>
 
 <template>
-  <div class="toolbar">
+  <div class="toolbar" role="toolbar" :aria-label="t('toolbar.label')">
     <div class="group">
-      <span class="label">主题</span>
+      <span class="label">{{ t('toolbar.theme') }}</span>
       <button
-        v-for="t in THEMES"
-        :key="t.id"
+        v-for="th in THEMES"
+        :key="th.id"
         class="swatch"
-        :class="{ active: theme === t.id }"
-        :title="t.name"
-        :style="{ background: t.bg, color: t.fg }"
-        @click="theme = t.id"
+        :class="{ active: theme === th.id }"
+        :title="t('theme.' + th.id)"
+        :aria-label="t('theme.' + th.id)"
+        :aria-pressed="theme === th.id"
+        :style="{ background: th.bg, color: th.fg }"
+        @click="theme = th.id"
       >
         A
       </button>
     </div>
     <div class="divider"></div>
     <div class="group">
-      <span class="label">背景</span>
+      <span class="label">{{ t('toolbar.background') }}</span>
       <button
         v-for="b in BACKGROUNDS"
         :key="b.id"
         class="dot"
         :class="{ active: background === b.id }"
-        :title="b.name"
+        :title="t('bg.' + b.id)"
+        :aria-label="t('bg.' + b.id)"
+        :aria-pressed="background === b.id"
         :style="{ background: b.value }"
         @click="background = b.id"
       ></button>
       <button
         class="dot none"
         :class="{ active: background === 'none' }"
-        title="无背景"
+        :title="t('bg.none')"
+        :aria-label="t('bg.none')"
+        :aria-pressed="background === 'none'"
         @click="background = 'none'"
       ></button>
     </div>
     <div class="divider"></div>
     <div class="group">
-      <span class="label">边距</span>
+      <span class="label">{{ t('toolbar.padding') }}</span>
       <div class="seg">
         <button
           v-for="p in PADDINGS"
           :key="p.id"
           :class="{ active: padding === p.id }"
           :disabled="background === 'none'"
+          :title="t('padding.' + p.id)"
+          :aria-label="t('padding.' + p.id)"
+          :aria-pressed="padding === p.id"
           @click="padding = p.id"
         >
           {{ p.label }}
@@ -61,11 +71,14 @@ const lineNumbers = defineModel('lineNumbers')
     </div>
     <div class="divider"></div>
     <div class="group">
-      <span class="label">行号</span>
+      <span class="label">{{ t('toolbar.lineNumbers') }}</span>
       <button
         class="switch"
         :class="{ on: lineNumbers }"
-        title="行号"
+        role="switch"
+        :aria-checked="lineNumbers"
+        :aria-label="t('toolbar.lineNumbers')"
+        :title="t('toolbar.lineNumbers')"
         @click="lineNumbers = !lineNumbers"
       >
         <i></i>

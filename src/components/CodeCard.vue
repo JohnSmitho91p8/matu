@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import CodeEditor from './CodeEditor.vue'
+import { t } from '../i18n'
 import { DEFAULT_FILENAME } from '../config/defaults'
 
 const props = defineProps({
@@ -46,6 +47,7 @@ function onFilenameBlur(e) {
         <label class="filename" :data-value="filename">
           <input
             :value="filename"
+            :aria-label="t('filename.label')"
             spellcheck="false"
             @input="emit('update:filename', $event.target.value)"
             @keydown.enter="$event.target.blur()"

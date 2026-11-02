@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { t } from '../i18n'
 import { getHighlighter, highlightLines, getCommentColor } from '../lib/highlighter'
 
 const props = defineProps({
@@ -132,6 +133,7 @@ function onInput(e) {
       autocapitalize="off"
       autocorrect="off"
       wrap="soft"
+      :aria-label="t('editor.label')"
       @input="onInput"
       @keydown="onKeydown"
       @paste="onPaste"

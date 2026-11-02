@@ -1,13 +1,21 @@
 <script setup>
+import LanguageSwitcher from './LanguageSwitcher.vue'
+import { t } from '../i18n'
+
 defineEmits(['download', 'copy'])
 </script>
 
 <template>
   <header class="topbar">
-    <div class="logo">码图</div>
+    <div class="logo">{{ t('app.logo') }}</div>
     <div class="actions">
-      <button class="btn btn-outline" @click="$emit('download')">下载</button>
-      <button class="btn btn-primary" @click="$emit('copy')">复制图片</button>
+      <LanguageSwitcher />
+      <button class="btn btn-outline" :title="t('top.download.title')" @click="$emit('download')">
+        {{ t('top.download') }}
+      </button>
+      <button class="btn btn-primary" :title="t('top.copy.title')" @click="$emit('copy')">
+        {{ t('top.copy') }}
+      </button>
     </div>
   </header>
 </template>
@@ -29,12 +37,14 @@ defineEmits(['download', 'copy'])
 
 .actions {
   display: flex;
+  align-items: center;
   gap: 10px;
 }
 
 .btn {
   height: 34px;
   padding: 0 16px;
+  white-space: nowrap;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
