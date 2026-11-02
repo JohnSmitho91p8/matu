@@ -1,12 +1,14 @@
 import { domToBlob } from 'modern-screenshot'
 
-const SCALE = 2
+// 电脑 2 倍，手机 3 倍（手机上常常放大看）
+export const SCALE_DESKTOP = 2
+export const SCALE_MOBILE = 3
 const CODE_FONTS = ['JetBrains Mono', 'LXGW WenKai Mono', 'D2Coding']
 // 无背景时卡片四周只有 16px，容不下 0 20px 68px 的阴影，导出时临时加宽透明边
 const PAGE_PAD = 16
 const EXPORT_PAD_NO_BG = 80
 
-export async function renderBlob(cardEl, { noBackground = false } = {}) {
+export async function renderBlob(cardEl, { noBackground = false, scale = SCALE_DESKTOP } = {}) {
   // 先同步让编辑框失去焦点，再等字体，避免光标出现在图里
   document.activeElement?.blur?.()
   // 字体按字符范围分包懒加载：先确保卡片里用到的字都已加载，再等其余字体
@@ -16,7 +18,7 @@ export async function renderBlob(cardEl, { noBackground = false } = {}) {
 
   const extra = noBackground ? EXPORT_PAD_NO_BG - PAGE_PAD : 0
   return domToBlob(cardEl, {
-    scale: SCALE,
+    scale,
     type: 'image/png',
     width: cardEl.offsetWidth + extra * 2,
     height: cardEl.offsetHeight + extra * 2,
@@ -40,4 +42,18 @@ export async function downloadImage(cardEl, filename, options) {
   a.download = `${filename}.png`
   a.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+// 手机：优先调起系统分享面板。分享成功或取消时返回 { status }；系统不支持或分享失败时返回生成好的图片，交给调用方显示预览
+export async function shareImage(cardEl, filename, options) {
+  const blob = await renderBlob(cardEl, options)
+  const file = new File([blob], `${filename}.png`, { type: 'image/png' })
+  if (!navigator.canShare?.({ files: [file] })) return { blob }
+  try {
+    await navigator.share({ files: [file] })
+    return { status: 'shared' }
+  } catch (e) {
+    if (e?.name === 'AbortError') return { status: 'cancelled' }
+    return { blob }
+  }
 }

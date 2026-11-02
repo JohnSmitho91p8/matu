@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { LANGUAGES, lang, setLang, t } from '../i18n'
 
+defineProps({ compact: { type: Boolean, default: false } })
+
 const open = ref(false)
 const root = ref(null)
 
@@ -34,6 +36,7 @@ onBeforeUnmount(() => {
   <div ref="root" class="lang">
     <button
       class="trigger"
+      :class="{ compact }"
       aria-haspopup="listbox"
       :aria-expanded="open"
       :aria-label="t('lang.label')"
@@ -45,7 +48,7 @@ onBeforeUnmount(() => {
         <path d="M3 12h18" />
         <path d="M12 3c2.6 2.6 3.9 5.6 3.9 9S14.6 18.4 12 21c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z" />
       </svg>
-      <span>{{ current.name }}</span>
+      <span v-if="!compact">{{ current.name }}</span>
     </button>
     <ul v-if="open" class="menu" role="listbox" :aria-label="t('lang.label')">
       <li
@@ -85,6 +88,13 @@ onBeforeUnmount(() => {
   transition: background 0.15s, color 0.15s, transform 0.1s;
 }
 
+.trigger.compact {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+}
+
 .trigger:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
@@ -112,7 +122,10 @@ onBeforeUnmount(() => {
 }
 
 .menu li {
-  padding: 8px 12px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
   border-radius: 6px;
   font-size: 14px;
   white-space: nowrap;

@@ -15,6 +15,7 @@ const props = defineProps({
   fontSize: { type: Number, default: BASE_FONT_SIZE },
   // 署名文字，空字符串表示不显示
   watermark: { type: String, default: '' },
+  mobile: { type: Boolean, default: false },
   lineNumbers: { type: Boolean, default: true },
   highlighted: { type: Array, default: () => [] },
 })
@@ -51,7 +52,7 @@ function onFilenameBlur(e) {
 </script>
 
 <template>
-  <div ref="cardEl" class="card" :style="cardStyle">
+  <div ref="cardEl" class="card" :class="{ mobile }" :style="cardStyle">
     <div
       class="window"
       :style="{ background: theme.bg, '--fg': theme.fg, '--scale': fontSize / BASE_FONT_SIZE }"
@@ -80,6 +81,7 @@ function onFilenameBlur(e) {
         :theme="theme.id"
         :lang="lang"
         :font-size="fontSize"
+        :mobile="mobile"
         :line-numbers="lineNumbers"
         :highlighted="highlighted"
         @update:model-value="emit('update:code', $event)"
@@ -103,6 +105,13 @@ function onFilenameBlur(e) {
   max-width: 960px;
   flex-shrink: 0;
   margin: auto;
+}
+
+/* 手机：卡片宽度 = 屏幕宽度 - 32px（两侧的 16px 在页面里），长行自动换行 */
+.card.mobile {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
 }
 
 .window {

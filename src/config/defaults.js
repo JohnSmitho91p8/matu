@@ -3,11 +3,11 @@ import { DEFAULT_LANGUAGE, languageById } from './languages'
 
 export const DEFAULT_FILENAME = languageById(DEFAULT_LANGUAGE).filename
 
-// 背景到窗口的距离（px）
+// 背景到窗口的距离（px）；手机上屏幕窄，用 mobilePx，否则窗口会被挤得太窄
 export const PADDINGS = [
-  { id: 's', label: 'S', px: 32 },
-  { id: 'm', label: 'M', px: 64 },
-  { id: 'l', label: 'L', px: 96 },
+  { id: 's', label: 'S', px: 32, mobilePx: 12 },
+  { id: 'm', label: 'M', px: 64, mobilePx: 20 },
+  { id: 'l', label: 'L', px: 96, mobilePx: 32 },
 ]
 
 // 代码字号，行高固定 1.6

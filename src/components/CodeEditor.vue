@@ -9,6 +9,7 @@ const props = defineProps({
   lang: { type: String, required: true },
   lineNumbers: { type: Boolean, default: true },
   fontSize: { type: Number, default: 15 },
+  mobile: { type: Boolean, default: false },
   // 被高亮的行号（0 开始）
   highlighted: { type: Array, default: () => [] },
 })
@@ -163,6 +164,7 @@ function onClick(e) {
     :style="{
       '--digits': digits,
       fontSize: `${fontSize}px`,
+      '--k': mobile ? Math.max(1, 16 / fontSize) : 1,
       '--lineno': commentColor ? `color-mix(in srgb, ${commentColor} 60%, transparent)` : 'inherit',
     }"
   >
@@ -226,9 +228,12 @@ function onClick(e) {
 }
 
 /* 关闭行号：不再依赖 --gutter，直接把左内边距写成和右侧一样的 20px */
-.editor.no-lineno .layer,
-.editor.no-lineno .input {
+.editor.no-lineno .layer {
   padding-left: var(--pad-x);
+}
+
+.editor.no-lineno .input {
+  padding-left: calc(var(--pad-x) * var(--k, 1));
 }
 
 .editor.no-lineno .line::before {
@@ -314,9 +319,19 @@ function onClick(e) {
 
 .input {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 0;
+  left: 0;
+  /* iOS 在输入框字号小于 16px 时，聚焦会自动放大页面。
+     所以手机上编辑框用 ≥16px 的字号（--k 倍），再整体缩小 1/--k 贴回高亮层：
+     字号、内边距、宽高都按同一个倍数放大，换行位置和高亮层完全一致，
+     导出的图片不用编辑框，不受影响。--k 为 1 时（电脑、17px 字号）这些都不起作用 */
+  width: calc(100% * var(--k, 1));
+  height: calc(100% * var(--k, 1));
+  font-size: calc(1em * var(--k, 1));
+  padding: calc(var(--pad-top) * var(--k, 1)) calc(var(--pad-x) * var(--k, 1)) calc(var(--pad-bottom) * var(--k, 1))
+    calc(var(--pad-x) * var(--k, 1) + var(--digits) * 1ch + 16px * var(--k, 1));
+  transform: scale(calc(1 / var(--k, 1)));
+  transform-origin: 0 0;
   resize: none;
   overflow: hidden;
   background: transparent;
