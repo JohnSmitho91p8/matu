@@ -8,7 +8,7 @@ import { copyImage, downloadImage } from './lib/exporter'
 import { isSampleCode, lang, sampleCode, t, useDocumentLang } from './i18n'
 import { THEMES } from './config/themes'
 import { BACKGROUNDS } from './config/backgrounds'
-import { DEFAULT_SETTINGS, PADDINGS } from './config/defaults'
+import { DEFAULT_SETTINGS, FONT_SIZES, PADDINGS } from './config/defaults'
 import { isCodeLanguage, isDefaultFilename, languageById } from './config/languages'
 import { changeRatio, detectLanguage } from './lib/detectLanguage'
 import { remapHighlights, toggleHighlight } from './lib/lineHighlights'
@@ -19,6 +19,7 @@ const settings = reactive(
     theme: (v) => THEMES.some((t) => t.id === v),
     background: (v) => v === 'none' || BACKGROUNDS.some((b) => b.id === v),
     padding: (v) => PADDINGS.some((p) => p.id === v),
+    fontSize: (v) => FONT_SIZES.some((f) => f.id === v),
     lineNumbers: (v) => typeof v === 'boolean',
     code: (v) => typeof v === 'string',
     filename: (v) => typeof v === 'string' && v.trim() !== '',
@@ -114,6 +115,7 @@ watch(settings, () => saveSettings({ ...settings }))
 const theme = computed(() => THEMES.find((t) => t.id === settings.theme))
 const background = computed(() => BACKGROUNDS.find((b) => b.id === settings.background) ?? null)
 const padding = computed(() => PADDINGS.find((p) => p.id === settings.padding).px)
+const fontSize = computed(() => FONT_SIZES.find((f) => f.id === settings.fontSize).px)
 
 // ---- 导出 ----
 const card = ref(null)
@@ -180,6 +182,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         :theme="theme"
         :background="background"
         :padding="padding"
+        :font-size="fontSize"
         :line-numbers="settings.lineNumbers"
       />
     </main>
@@ -191,6 +194,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       v-model:theme="settings.theme"
       v-model:background="settings.background"
       v-model:padding="settings.padding"
+      v-model:font-size="settings.fontSize"
       v-model:line-numbers="settings.lineNumbers"
     />
     <Toast :message="toastMessage" />

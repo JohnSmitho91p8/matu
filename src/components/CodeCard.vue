@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import CodeEditor from './CodeEditor.vue'
+import { BASE_FONT_SIZE } from '../config/defaults'
 import { t } from '../i18n'
 
 const props = defineProps({
@@ -11,6 +12,7 @@ const props = defineProps({
   // null 表示无背景
   background: { type: Object, default: null },
   padding: { type: Number, required: true },
+  fontSize: { type: Number, default: BASE_FONT_SIZE },
   lineNumbers: { type: Boolean, default: true },
   highlighted: { type: Array, default: () => [] },
 })
@@ -37,7 +39,7 @@ function onFilenameBlur(e) {
   <div ref="cardEl" class="card" :style="cardStyle">
     <div
       class="window"
-      :style="{ background: theme.bg, '--fg': theme.fg }"
+      :style="{ background: theme.bg, '--fg': theme.fg, '--scale': fontSize / BASE_FONT_SIZE }"
     >
       <div class="titlebar">
         <div class="dots">
@@ -62,6 +64,7 @@ function onFilenameBlur(e) {
         :model-value="code"
         :theme="theme.id"
         :lang="lang"
+        :font-size="fontSize"
         :line-numbers="lineNumbers"
         :highlighted="highlighted"
         @update:model-value="emit('update:code', $event)"
@@ -116,7 +119,7 @@ function onFilenameBlur(e) {
 /* 输入框宽度跟随文字：隐藏的伪元素撑开宽度，input 叠在上面 */
 .filename {
   display: inline-grid;
-  font-size: 13px;
+  font-size: calc(13px * var(--scale, 1));
   font-family: var(--font-ui);
   color: color-mix(in srgb, var(--fg) 60%, transparent);
 }

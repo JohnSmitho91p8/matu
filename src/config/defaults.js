@@ -10,11 +10,21 @@ export const PADDINGS = [
   { id: 'l', label: 'L', px: 96 },
 ]
 
+// 代码字号，行高固定 1.6
+export const FONT_SIZES = [
+  { id: 's', label: 'S', px: 13 },
+  { id: 'm', label: 'M', px: 15 },
+  { id: 'l', label: 'L', px: 17 },
+]
+
+export const BASE_FONT_SIZE = 15
+
 // background 为 'none' 表示无背景
 export const DEFAULT_SETTINGS = {
   theme: 'vitesse-dark',
   background: 'sunset',
   padding: 'm',
+  fontSize: 'm',
   lineNumbers: true,
   code: sampleCode(),
   filename: DEFAULT_FILENAME,

@@ -1,7 +1,7 @@
 <script setup>
 import { BACKGROUNDS } from '../config/backgrounds'
 import { THEMES } from '../config/themes'
-import { PADDINGS } from '../config/defaults'
+import { FONT_SIZES, PADDINGS } from '../config/defaults'
 import CodeLanguagePicker from './CodeLanguagePicker.vue'
 import { t } from '../i18n'
 
@@ -15,6 +15,7 @@ const language = defineModel('language')
 const theme = defineModel('theme')
 const background = defineModel('background')
 const padding = defineModel('padding')
+const fontSize = defineModel('fontSize')
 const lineNumbers = defineModel('lineNumbers')
 </script>
 
@@ -35,10 +36,10 @@ const lineNumbers = defineModel('lineNumbers')
         :title="t('theme.' + th.id)"
         :aria-label="t('theme.' + th.id)"
         :aria-pressed="theme === th.id"
-        :style="{ background: th.bg, color: th.fg }"
+        :style="{ background: th.bg, '--kw': th.keyword, '--str': th.string, '--cmt': th.comment }"
         @click="theme = th.id"
       >
-        A
+        <i></i><i></i><i></i>
       </button>
     </div>
     <div class="divider"></div>
@@ -73,12 +74,29 @@ const lineNumbers = defineModel('lineNumbers')
           :key="p.id"
           :class="{ active: padding === p.id }"
           :disabled="background === 'none'"
-          :title="t('padding.' + p.id)"
-          :aria-label="t('padding.' + p.id)"
+          :title="t('size.' + p.id)"
+          :aria-label="t('size.' + p.id)"
           :aria-pressed="padding === p.id"
           @click="padding = p.id"
         >
           {{ p.label }}
+        </button>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="group">
+      <span class="label">{{ t('toolbar.fontSize') }}</span>
+      <div class="seg">
+        <button
+          v-for="f in FONT_SIZES"
+          :key="f.id"
+          :class="{ active: fontSize === f.id }"
+          :title="t('size.' + f.id)"
+          :aria-label="t('size.' + f.id)"
+          :aria-pressed="fontSize === f.id"
+          @click="fontSize = f.id"
+        >
+          {{ f.label }}
         </button>
       </div>
     </div>
@@ -180,14 +198,37 @@ const lineNumbers = defineModel('lineNumbers')
 }
 
 .swatch {
-  width: 26px;
+  width: 28px;
   height: 26px;
-  padding: 0;
+  padding: 5px 5px 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-code);
+}
+
+/* 迷你代码预览：三条短横线依次是关键字、字符串、注释的颜色 */
+.swatch i {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.swatch i:nth-child(1) {
+  width: 9px;
+  background: var(--kw);
+}
+
+.swatch i:nth-child(2) {
+  width: 15px;
+  background: var(--str);
+}
+
+.swatch i:nth-child(3) {
+  width: 11px;
+  background: var(--cmt);
 }
 
 .dot {

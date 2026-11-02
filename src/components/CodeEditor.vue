@@ -8,6 +8,7 @@ const props = defineProps({
   theme: { type: String, required: true },
   lang: { type: String, required: true },
   lineNumbers: { type: Boolean, default: true },
+  fontSize: { type: Number, default: 15 },
   // 被高亮的行号（0 开始）
   highlighted: { type: Array, default: () => [] },
 })
@@ -154,6 +155,7 @@ function onClick(e) {
     :class="{ 'no-lineno': !lineNumbers, 'has-hl': highlighted.length > 0, 'on-gutter': hoverLine >= 0 }"
     :style="{
       '--digits': digits,
+      fontSize: `${fontSize}px`,
       '--lineno': commentColor ? `color-mix(in srgb, ${commentColor} 60%, transparent)` : 'inherit',
     }"
   >
@@ -206,7 +208,6 @@ function onClick(e) {
   --pad-bottom: 20px;
   --gutter: calc(var(--digits) * 1ch + 16px);
   font-family: var(--font-code);
-  font-size: 15px;
   line-height: 1.6;
   tab-size: 4;
   font-variant-ligatures: none;
@@ -296,8 +297,9 @@ function onClick(e) {
 .line::before {
   content: attr(data-n);
   position: absolute;
-  left: calc(-1 * var(--gutter));
-  width: calc(var(--digits) * 1ch);
+  /* 右边缘贴着代码左侧 16px 处；不写死宽度，避免导出时数字因小数像素被挤到两行 */
+  right: calc(100% + 16px);
+  white-space: nowrap;
   text-align: right;
   color: var(--lineno);
   transition: color 0.2s;
