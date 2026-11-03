@@ -29,6 +29,13 @@ Turn code into a beautiful image — copy it in one click and share it anywhere.
 | `Cmd/Ctrl + Shift + C` | Copy image |
 | `Cmd/Ctrl + S` | Download image |
 
+## Design principles
+
+1. **Do one thing**: turn code into a good-looking image.
+2. **Open and use**: no account, and all your data stays in your browser.
+3. **Beautiful by default**: the image looks good without touching a single setting.
+4. **Less is more**: a new feature has to be used often enough to earn its place, and features that aren't will be removed.
+
 ## Run locally
 
 Requires Node.js 20.19+ (or 22.12+).
