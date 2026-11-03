@@ -1,34 +1,67 @@
 <script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import SettingsForm from './SettingsForm.vue'
 import { BACKGROUNDS } from '../config/backgrounds'
 import { THEMES } from '../config/themes'
-import { FONT_SIZES, PADDINGS } from '../config/defaults'
-import CodeLanguagePicker from './CodeLanguagePicker.vue'
-import WatermarkPicker from './WatermarkPicker.vue'
 import { t } from '../i18n'
 
-defineProps({
-  detectedLanguage: { type: String, required: true },
-  highlightCount: { type: Number, default: 0 },
-})
+defineProps({ highlightCount: { type: Number, default: 0 } })
 defineEmits(['clear-highlight'])
 
-const language = defineModel('language')
 const theme = defineModel('theme')
 const background = defineModel('background')
+const language = defineModel('language')
 const padding = defineModel('padding')
 const fontSize = defineModel('fontSize')
+const lineNumbers = defineModel('lineNumbers')
 const watermarkEnabled = defineModel('watermarkEnabled')
 const watermarkText = defineModel('watermarkText')
-const lineNumbers = defineModel('lineNumbers')
+
+// 设置面板：在「设置」按钮上方弹出。工具栏自己会横向滚动，面板用 fixed 定位，避免被裁掉
+const open = ref(false)
+const trigger = ref(null)
+const panelStyle = ref({})
+
+function toggle() {
+  open.value = !open.value
+  if (!open.value) return
+  const rect = trigger.value.getBoundingClientRect()
+  const width = 300
+  panelStyle.value = {
+    left: `${Math.min(Math.max(8, rect.left + rect.width / 2 - width / 2), window.innerWidth - width - 8)}px`,
+    bottom: `${window.innerHeight - rect.top + 10}px`,
+    width: `${width}px`,
+  }
+}
+
+function close() {
+  open.value = false
+}
+
+function onDocClick(e) {
+  if (!open.value) return
+  if (trigger.value?.contains(e.target) || e.target.closest?.('.settings-panel')) return
+  close()
+}
+
+function onKeydown(e) {
+  if (e.key === 'Escape') close()
+}
+
+onMounted(() => {
+  document.addEventListener('click', onDocClick)
+  document.addEventListener('keydown', onKeydown)
+  window.addEventListener('resize', close)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+  document.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('resize', close)
+})
 </script>
 
 <template>
   <div class="toolbar" role="toolbar" :aria-label="t('toolbar.label')">
-    <div class="group" data-testid="language">
-      <span class="label">{{ t('toolbar.language') }}</span>
-      <CodeLanguagePicker v-model="language" :detected="detectedLanguage" />
-    </div>
-    <div class="divider"></div>
     <div class="group" data-testid="theme">
       <span class="label">{{ t('toolbar.theme') }}</span>
       <button
@@ -69,64 +102,40 @@ const lineNumbers = defineModel('lineNumbers')
       ></button>
     </div>
     <div class="divider"></div>
-    <div class="group" data-testid="padding">
-      <span class="label">{{ t('toolbar.padding') }}</span>
-      <div class="seg">
-        <button
-          v-for="p in PADDINGS"
-          :key="p.id"
-          :class="{ active: padding === p.id }"
-          :disabled="background === 'none'"
-          :title="t('size.' + p.id)"
-          :aria-label="t('size.' + p.id)"
-          :aria-pressed="padding === p.id"
-          @click="padding = p.id"
-        >
-          {{ p.label }}
-        </button>
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div class="group" data-testid="font-size">
-      <span class="label">{{ t('toolbar.fontSize') }}</span>
-      <div class="seg">
-        <button
-          v-for="f in FONT_SIZES"
-          :key="f.id"
-          :class="{ active: fontSize === f.id }"
-          :title="t('size.' + f.id)"
-          :aria-label="t('size.' + f.id)"
-          :aria-pressed="fontSize === f.id"
-          @click="fontSize = f.id"
-        >
-          {{ f.label }}
-        </button>
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div class="group" data-testid="line-numbers">
-      <span class="label">{{ t('toolbar.lineNumbers') }}</span>
-      <button
-        class="switch"
-        :class="{ on: lineNumbers }"
-        role="switch"
-        :aria-checked="lineNumbers"
-        :aria-label="t('toolbar.lineNumbers')"
-        :title="t('toolbar.lineNumbers')"
-        @click="lineNumbers = !lineNumbers"
-      >
-        <i></i>
-      </button>
-    </div>
-    <div class="divider"></div>
-    <div class="group" data-testid="watermark">
-      <WatermarkPicker v-model:enabled="watermarkEnabled" v-model:text="watermarkText" />
-    </div>
+    <button
+      ref="trigger"
+      class="settings-btn"
+      :class="{ on: open }"
+      aria-haspopup="dialog"
+      :aria-expanded="open"
+      data-testid="settings-button"
+      @click="toggle"
+    >
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+      </svg>
+      <span>{{ t('toolbar.settings') }}</span>
+    </button>
     <template v-if="highlightCount > 0">
       <div class="divider"></div>
       <button class="clear" @click="$emit('clear-highlight')">{{ t('toolbar.clearHighlight') }}</button>
     </template>
   </div>
+
+  <Teleport to="body">
+    <div v-if="open" class="settings-panel" role="dialog" :aria-label="t('toolbar.settings')" :style="panelStyle">
+      <SettingsForm
+        v-model:language="language"
+        v-model:padding="padding"
+        v-model:font-size="fontSize"
+        v-model:line-numbers="lineNumbers"
+        v-model:watermark-enabled="watermarkEnabled"
+        v-model:watermark-text="watermarkText"
+        :padding-disabled="background === 'none'"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -160,11 +169,8 @@ const lineNumbers = defineModel('lineNumbers')
 }
 
 .swatch,
-.dot,
-.seg button,
-.switch,
-.switch i {
-  transition: transform 0.15s, outline-color 0.15s, background 0.2s, left 0.2s, opacity 0.15s;
+.dot {
+  transition: transform 0.15s, outline-color 0.15s, background 0.2s, opacity 0.15s;
 }
 
 .swatch:hover,
@@ -175,15 +181,6 @@ const lineNumbers = defineModel('lineNumbers')
 .swatch:active,
 .dot:active {
   transform: scale(0.92);
-}
-
-.seg button:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.seg button:not(:disabled):active,
-.switch:active {
-  transform: scale(0.94);
 }
 
 .group {
@@ -268,37 +265,32 @@ const lineNumbers = defineModel('lineNumbers')
   outline-offset: 2px;
 }
 
-.seg {
+.settings-btn {
+  height: 28px;
+  padding: 0 12px 0 10px;
   display: flex;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 2px;
-}
-
-.seg button {
-  width: 28px;
-  height: 24px;
-  padding: 0;
-  background: transparent;
+  align-items: center;
+  gap: 6px;
   border: 0;
-  border-radius: 6px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s;
 }
 
-.seg button.active {
+.settings-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.settings-btn:active {
+  transform: scale(0.96);
+}
+
+.settings-btn.on {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
-}
-
-.switch {
-  width: 36px;
-  height: 20px;
-  padding: 0;
-  border-radius: 999px;
-  border: 0;
-  background: rgba(255, 255, 255, 0.2);
-  position: relative;
 }
 
 .clear {
@@ -320,27 +312,19 @@ const lineNumbers = defineModel('lineNumbers')
 .clear:active {
   transform: scale(0.96);
 }
+</style>
 
-.seg button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.switch i {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-}
-
-.switch.on {
-  background: #34c759;
-}
-
-.switch.on i {
-  left: 18px;
+<style>
+/* 设置面板被放到了 body 下面（Teleport），样式不能是 scoped */
+.settings-panel {
+  position: fixed;
+  padding: 8px 14px 10px;
+  border-radius: 12px;
+  background: rgba(40, 40, 44, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  z-index: 30;
 }
 </style>

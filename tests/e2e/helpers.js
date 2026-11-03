@@ -43,72 +43,65 @@ export const settingsFromStorage = (page) =>
 
 // ---- 工具栏操作：电脑和手机的界面不同，这里统一成一套接口 ----
 // （工具栏改版时只需要改这个文件）
+// 电脑：工具栏上有主题、背景，其余设置在「设置」按钮弹出的面板里；
+// 手机：底部栏有主题、背景、设置三项，各自从底部弹出面板。
 
-async function withSheet(page, itemName, action) {
-  await page.locator('.mtoolbar .item', { hasText: itemName }).click()
+async function withSheet(page, itemTestId, action) {
+  await page.getByTestId(itemTestId).click()
   const sheet = page.locator('.sheet')
   await expect(sheet).toBeVisible()
-  await action(sheet)
+  const result = await action(sheet)
   await page.locator('.sheet-root .backdrop').click({ position: { x: 10, y: 10 } })
   await expect(sheet).toBeHidden()
+  return result
+}
+
+// 打开设置面板，执行操作，再关掉
+export async function withSettings(page, action) {
+  if (isMobile(page)) return withSheet(page, 'item-settings', (sheet) => action(sheet.getByTestId('settings')))
+  await page.getByTestId('settings-button').click()
+  const panel = page.locator('.settings-panel')
+  await expect(panel).toBeVisible()
+  const result = await action(panel.getByTestId('settings'))
+  await page.keyboard.press('Escape')
+  await expect(panel).toBeHidden()
+  return result
 }
 
 export async function setTheme(page, name) {
-  if (isMobile(page)) return withSheet(page, 'Theme', (s) => s.getByRole('button', { name }).click())
-  await page.locator('[data-testid=theme]').getByRole('button', { name }).click()
+  if (isMobile(page)) return withSheet(page, 'item-theme', (s) => s.getByRole('button', { name }).click())
+  await page.getByTestId('theme').getByRole('button', { name }).click()
 }
 
 export async function setBackground(page, name) {
-  if (isMobile(page)) return withSheet(page, 'Background', (s) => s.getByRole('button', { name }).click())
-  await page.locator('[data-testid=background]').getByRole('button', { name }).click()
+  if (isMobile(page)) return withSheet(page, 'item-background', (s) => s.getByRole('button', { name }).click())
+  await page.getByTestId('background').getByRole('button', { name }).click()
 }
 
-export async function setPadding(page, size) {
-  if (isMobile(page)) return withSheet(page, 'Padding', (s) => s.getByRole('button', { name: size }).click())
-  await page.locator('[data-testid=padding]').getByRole('button', { name: size }).click()
-}
+export const setPadding = (page, size) =>
+  withSettings(page, (form) => form.getByTestId('padding').getByRole('button', { name: size }).click())
 
-export async function setFontSize(page, size) {
-  if (isMobile(page)) return withSheet(page, 'Font size', (s) => s.getByRole('button', { name: size }).click())
-  await page.locator('[data-testid=font-size]').getByRole('button', { name: size }).click()
-}
+export const setFontSize = (page, size) =>
+  withSettings(page, (form) => form.getByTestId('font-size').getByRole('button', { name: size }).click())
 
-export async function toggleLineNumbers(page) {
-  if (isMobile(page)) return withSheet(page, 'Line numbers', (s) => s.getByRole('switch').click())
-  await page.locator('[data-testid=line-numbers]').getByRole('switch').click()
-}
+export const toggleLineNumbers = (page) =>
+  withSettings(page, (form) => form.getByTestId('line-numbers').getByRole('switch').click())
 
-export async function setWatermark(page, text) {
-  if (isMobile(page)) {
-    return withSheet(page, 'Signature', async (s) => {
-      const toggle = s.getByRole('switch')
-      if ((await toggle.getAttribute('aria-checked')) !== 'true') await toggle.click()
-      await s.getByRole('textbox').fill(text)
-    })
-  }
-  await page.locator('[data-testid=watermark]').getByRole('button').click()
-  const panel = page.locator('.watermark-panel')
-  const toggle = panel.getByRole('switch')
-  if ((await toggle.getAttribute('aria-checked')) !== 'true') await toggle.click()
-  await panel.getByRole('textbox').fill(text)
-  await page.keyboard.press('Escape')
-  await expect(panel).toBeHidden()
-}
+export const setWatermark = (page, text) =>
+  withSettings(page, async (form) => {
+    const row = form.getByTestId('watermark')
+    const toggle = row.getByRole('switch')
+    if ((await toggle.getAttribute('aria-checked')) !== 'true') await toggle.click()
+    await row.getByRole('textbox').fill(text)
+  })
 
 // name: 'Auto' 或语言名，如 'Python'
-export async function setCodeLanguage(page, name) {
-  if (isMobile(page)) {
-    const re = name === 'Auto' ? /^Auto/ : new RegExp(`^${name.replace(/[+]/g, '\\$&')}$`)
-    return withSheet(page, 'Language', (s) => s.getByRole('button', { name: re }).click())
-  }
-  await page.locator('[data-testid=language]').getByRole('button').click()
-  await page.getByRole('option', { name, exact: true }).click()
-}
+export const setCodeLanguage = (page, name) =>
+  withSettings(page, (form) => form.getByTestId('language').locator('select').selectOption({ label: name }))
 
-export const codeLanguageLabel = (page) =>
-  isMobile(page)
-    ? Promise.resolve(null)
-    : page.locator('[data-testid=language] button').innerText()
+// 设置里的语言项当前的取值：'auto' 或语言 id
+export const codeLanguageSetting = (page) =>
+  withSettings(page, (form) => form.getByTestId('language').locator('select').inputValue())
 
 // ---- 代码输入 ----
 

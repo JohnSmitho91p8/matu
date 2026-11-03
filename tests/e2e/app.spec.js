@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test'
 import {
-  codeLanguageLabel,
   isMobile,
   openApp,
   pasteCode,
@@ -143,7 +142,6 @@ test.describe('code language', () => {
     const python = 'import sys\n\ndef main():\n    print(sys.argv)\n\nif __name__ == "__main__":\n    main()'
     await pasteCode(page, python)
     await expect(page.locator('.filename input')).toHaveValue('main.py')
-    if (!isMobile(page)) expect(await codeLanguageLabel(page)).toContain('Python')
     await pasteCode(page, 'public class Main {\n  public static void main(String[] a) {\n    System.out.println(1);\n  }\n}')
     await expect(page.locator('.filename input')).toHaveValue('Main.java')
   })

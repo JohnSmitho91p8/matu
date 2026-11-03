@@ -211,7 +211,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     <component
       :is="isMobile ? MobileToolbar : Toolbar"
       v-model:language="settings.language"
-      :detected-language="settings.detectedLanguage"
       :highlight-count="settings.highlightedLines.length"
       @clear-highlight="clearHighlights"
       v-model:theme="settings.theme"
