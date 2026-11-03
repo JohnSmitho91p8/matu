@@ -162,3 +162,49 @@ test.describe('unusual input and environment', () => {
     expectBelow(took, 8000, 'export with fonts that never load')
   })
 })
+
+// WebKit 里，图片中嵌入的字体是异步解码的：导出时如果图片画得太早，中日韩字符会是空白。机器越忙越容易出现，
+// 所以这里同时开很多页面一起导出（制造负载），每一张图里的中日韩注释都必须和同样排版的西文代码一样「有墨迹」
+test.describe('CJK text is never missing from the image', () => {
+  test.skip(({ isMobile }) => isMobile, 'many concurrent exports are run on desktop sizes only')
+  test.setTimeout(180_000)
+
+  const CJK = '快速幂计算取模运算べき乗を計算するプログラム빠른거듭제곱계산프로그램'
+  // 每个中日韩字符占两格：西文用 MM 替换，墨迹量相当
+  const cjkCode = [0, 1, 2].map((i) => `// ${CJK.slice(i * 12, i * 12 + 12)}`).join('\n')
+  const latinCode = cjkCode.replace(/[^\x00-\x7f]/g, 'MM')
+
+  async function exportInk(browser, code) {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'en-US', acceptDownloads: true })
+    try {
+      const page = await context.newPage()
+      // 无背景：图片里只有窗口，没有渐变背景干扰计数
+      await openApp(page, { storage: { 'matu:settings': JSON.stringify({ background: 'none' }) } })
+      await typeCode(page, code)
+      const png = await exportPng(page)
+      // 文字比窗口背景亮得多：数一数「亮」像素
+      return await page.evaluate(async (base64) => {
+        const bmp = await createImageBitmap(await (await fetch(`data:image/png;base64,${base64}`)).blob())
+        const c = document.createElement('canvas')
+        c.width = bmp.width
+        c.height = bmp.height
+        const ctx = c.getContext('2d')
+        ctx.drawImage(bmp, 0, 0)
+        const { data } = ctx.getImageData(0, 0, c.width, c.height)
+        let ink = 0
+        for (let i = 0; i < data.length; i += 4) if (data[i + 3] > 0 && data[i] > 70) ink++
+        return ink
+      }, png.toString('base64'))
+    } finally {
+      await context.close()
+    }
+  }
+
+  test('eight exports at once all draw the Chinese, Japanese and Korean comments', async ({ browser }) => {
+    const reference = await exportInk(browser, latinCode)
+    const inks = await Promise.all(Array.from({ length: 8 }, () => exportInk(browser, cjkCode)))
+    console.log(`CJK INK ${test.info().project.name} | latin reference ${reference} | ${inks.join(' ')}`)
+    for (const ink of inks) expect(ink).toBeGreaterThan(reference * 0.6)
+  })
+})
+

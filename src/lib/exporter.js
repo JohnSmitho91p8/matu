@@ -1,4 +1,4 @@
-import { buildFontCss } from './exportFonts'
+import { buildFontCss, waitForEmbeddedFonts } from './exportFonts'
 
 
 // 电脑 2 倍，手机 3 倍（手机上常常放大看）
@@ -105,7 +105,9 @@ export async function renderBlob(cardEl, { scale: desired = SCALE_DESKTOP } = {}
     Promise.all([...CODE_FONTS.map((f) => document.fonts.load(`15px "${f}"`, text)), document.fonts.ready]).catch(() => {}),
     FONT_TIMEOUT,
   )
-  const [, fontCss] = await Promise.all([pageFontsReady, buildFontCss(text, { timeout: FONT_TIMEOUT })])
+  const [, fonts] = await Promise.all([pageFontsReady, buildFontCss(text, { timeout: FONT_TIMEOUT })])
+  await waitForEmbeddedFonts(fonts, FONT_TIMEOUT)
+  const fontCss = fonts.css
 
   // 主题、颜色切换有 200ms 的过渡动画：等动画结束再取样式，否则会导出到一半的颜色
   await withTimeout(Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))), 600)
