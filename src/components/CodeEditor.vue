@@ -9,6 +9,7 @@ const props = defineProps({
   theme: { type: String, required: true },
   lang: { type: String, required: true },
   lineNumbers: { type: Boolean, default: true },
+  startLine: { type: Number, default: 1 },
   fontSize: { type: Number, default: 15 },
   mobile: { type: Boolean, default: false },
   // 行标记 [{ line, kind }]：line 是行下标（0 开始），kind 是 focus / wrong / right
@@ -35,7 +36,8 @@ const NEXT_HINT = { none: 'mark.toFocus', focus: 'mark.toWrong', wrong: 'mark.to
 const hoverTitle = computed(() =>
   hoverLine.value >= 0 ? t(NEXT_HINT[kindByLine.value.get(hoverLine.value) ?? 'none']) : undefined,
 )
-const digits = computed(() => Math.max(2, String(lines.value.length).length))
+// 行号栏宽度按最大的那个行号（起始行号 + 行数 - 1）的位数算
+const digits = computed(() => Math.max(2, String(props.startLine + lines.value.length - 1).length))
 
 // 输入后立刻渲染：与缓存相同的首尾行沿用旧颜色，改动的行先显示为纯文本，
 // 等 50ms 防抖后的完整高亮再补上颜色，避免光标和文字错位或闪烁
@@ -192,10 +194,10 @@ function onClick(e) {
       <div
         v-for="(tokens, i) in lineTokens"
         :key="i"
-        v-memo="[tokens, i, kindByLine.get(i), hoverLine === i]"
+        v-memo="[tokens, i, kindByLine.get(i), hoverLine === i, startLine]"
         class="line"
         :class="[kindByLine.has(i) && ['hl', `mark-${kindByLine.get(i)}`], { hover: hoverLine === i }]"
-        :data-n="i + 1"
+        :data-n="startLine + i"
       ><span
           v-for="(t, j) in tokens"
           :key="j"

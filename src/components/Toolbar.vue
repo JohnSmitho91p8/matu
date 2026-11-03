@@ -14,6 +14,7 @@ const language = defineModel('language')
 const padding = defineModel('padding')
 const fontSize = defineModel('fontSize')
 const lineNumbers = defineModel('lineNumbers')
+const startLine = defineModel('startLine')
 const watermarkEnabled = defineModel('watermarkEnabled')
 const watermarkText = defineModel('watermarkText')
 
@@ -130,6 +131,7 @@ onBeforeUnmount(() => {
         v-model:padding="padding"
         v-model:font-size="fontSize"
         v-model:line-numbers="lineNumbers"
+        v-model:start-line="startLine"
         v-model:watermark-enabled="watermarkEnabled"
         v-model:watermark-text="watermarkText"
         :padding-disabled="background === 'none'"

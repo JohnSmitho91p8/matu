@@ -17,6 +17,7 @@ const props = defineProps({
   watermark: { type: String, default: '' },
   mobile: { type: Boolean, default: false },
   lineNumbers: { type: Boolean, default: true },
+  startLine: { type: Number, default: 1 },
   // 行标记 [{ line, kind }]
   marks: { type: Array, default: () => [] },
 })
@@ -121,6 +122,7 @@ function onFilenameBlur(e) {
         :font-size="fontSize"
         :mobile="mobile"
         :line-numbers="lineNumbers"
+        :start-line="startLine"
         :marks="marks"
         @update:model-value="emit('update:code', $event)"
         @paste-code="emit('paste-code', $event)"

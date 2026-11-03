@@ -86,7 +86,10 @@ function clearHighlights() {
 
 // 粘贴：选中全部内容再粘贴，等于换了一段新代码，清除高亮；然后重新识别语言
 function onPasteCode({ replacedAll }) {
-  if (replacedAll) clearHighlights()
+  if (replacedAll) {
+    clearHighlights()
+    settings.startLine = 1
+  }
   detect()
 }
 
@@ -292,6 +295,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         :font-size="fontSize"
         :watermark="watermark"
         :line-numbers="settings.lineNumbers"
+        :start-line="settings.startLine"
         :mobile="isMobile"
       />
     </main>
@@ -307,6 +311,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       v-model:watermark-enabled="settings.watermarkEnabled"
       v-model:watermark-text="settings.watermarkText"
       v-model:line-numbers="settings.lineNumbers"
+      v-model:start-line="settings.startLine"
     />
     <PreviewOverlay :url="previewUrl" @close="closePreview" />
     <Toast :message="toastMessage" />

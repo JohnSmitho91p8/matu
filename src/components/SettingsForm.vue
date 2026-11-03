@@ -1,8 +1,9 @@
 <script setup>
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { CODE_LANGUAGES } from '../config/languages'
 import { FONT_SIZES, PADDINGS, WATERMARK_MAX_LENGTH } from '../config/defaults'
 import { t } from '../i18n'
+import { normalizeStartLine } from '../lib/startLine'
 
 // 电脑上的设置面板和手机上的设置面板共用这一份内容；touch 为手机排版（更大的点击区域）
 defineProps({
@@ -15,6 +16,19 @@ const language = defineModel('language')
 const padding = defineModel('padding')
 const fontSize = defineModel('fontSize')
 const lineNumbers = defineModel('lineNumbers')
+const startLine = defineModel('startLine')
+
+// 输入框里的文字单独保存：输入过程中允许是空的或不合法的，失去焦点或按回车时再整理
+const startText = ref(String(startLine.value))
+watch(startLine, (v) => {
+  startText.value = String(v)
+})
+
+function commitStartLine() {
+  const n = normalizeStartLine(startText.value)
+  startLine.value = n
+  startText.value = String(n)
+}
 const watermarkEnabled = defineModel('watermarkEnabled')
 const watermarkText = defineModel('watermarkText')
 
@@ -89,6 +103,22 @@ function toggleWatermark() {
       >
         <i></i>
       </button>
+    </div>
+
+    <div class="row" data-testid="start-line">
+      <label class="label" for="settings-start-line">{{ t('toolbar.startLine') }}</label>
+      <input
+        id="settings-start-line"
+        v-model="startText"
+        class="num"
+        type="text"
+        inputmode="numeric"
+        maxlength="5"
+        :disabled="!lineNumbers"
+        autocomplete="off"
+        @blur="commitStartLine"
+        @keydown.enter="$event.target.blur()"
+      />
     </div>
 
     <div class="row stacked" data-testid="watermark">
@@ -283,6 +313,15 @@ input:focus {
   border-color: rgba(255, 255, 255, 0.5);
 }
 
+input.num {
+  width: 80px;
+  text-align: right;
+}
+
+input:disabled {
+  opacity: 0.4;
+}
+
 input::placeholder {
   color: rgba(255, 255, 255, 0.35);
 }
@@ -358,6 +397,10 @@ input::placeholder {
 
 .touch .switch.on i {
   left: 23px;
+}
+
+.touch input.num {
+  width: 110px;
 }
 
 .touch input {
