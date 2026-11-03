@@ -31,9 +31,6 @@ const STYLE_PROPERTIES = [
 
 // ---- 导出的几个固定数值 ----
 
-// 无背景时卡片四周只有 16px，容不下 0 20px 68px 的阴影，导出时临时加宽透明边
-const PAGE_PAD = 16
-const EXPORT_PAD_NO_BG = 80
 
 // 等字体加载的最长时间：网络很慢或字体加载失败时，超时后照常导出（用系统字体），不能一直卡住
 const FONT_TIMEOUT = 3000
@@ -71,14 +68,14 @@ export function chooseScale(width, height, desired, { maxPixels, maxSide = MAX_S
   return null
 }
 
-function exportGeometry(cardEl, noBackground) {
-  const extra = noBackground ? EXPORT_PAD_NO_BG - PAGE_PAD : 0
-  return { extra, width: cardEl.offsetWidth + extra * 2, height: cardEl.offsetHeight + extra * 2 }
+// 图片就是卡片本身的大小：有背景时包含背景边距，无背景时只有窗口（没有边距，也没有阴影）
+function exportGeometry(cardEl) {
+  return { width: cardEl.offsetWidth, height: cardEl.offsetHeight }
 }
 
 // 这张卡片现在能不能导出？返回 null（可以）或 'too-large'。计算很便宜，点击时可以同步调用
-export function exportProblem(cardEl, { noBackground = false } = {}) {
-  const { width, height } = exportGeometry(cardEl, noBackground)
+export function exportProblem(cardEl) {
+  const { width, height } = exportGeometry(cardEl)
   const maxPixels = isIOSDevice() ? MAX_PIXELS_IOS : MAX_PIXELS_DESKTOP
   return chooseScale(width, height, 1, { maxPixels }) ? null : 'too-large'
 }
@@ -94,8 +91,8 @@ export function loadExportLibrary() {
   return libraryPromise
 }
 
-export async function renderBlob(cardEl, { noBackground = false, scale: desired = SCALE_DESKTOP } = {}) {
-  const { extra, width, height } = exportGeometry(cardEl, noBackground)
+export async function renderBlob(cardEl, { scale: desired = SCALE_DESKTOP } = {}) {
+  const { width, height } = exportGeometry(cardEl)
   const maxPixels = isIOSDevice() ? MAX_PIXELS_IOS : MAX_PIXELS_DESKTOP
   const scale = chooseScale(width, height, desired, { maxPixels })
   if (!scale) throw new ExportError('too-large')
@@ -122,7 +119,7 @@ export async function renderBlob(cardEl, { noBackground = false, scale: desired 
     width,
     height,
     // 屏幕上卡片可能被缩小显示，导出时始终按原始尺寸
-    style: { transform: 'none', ...(noBackground ? { padding: `${EXPORT_PAD_NO_BG}px` } : {}) },
+    style: { transform: 'none' },
     // 编辑框文字本来就是透明的，导出时直接去掉，光标和选区都不会出现
     filter: (node) => node.tagName !== 'TEXTAREA',
   })

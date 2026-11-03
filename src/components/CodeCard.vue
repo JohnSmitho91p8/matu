@@ -58,10 +58,10 @@ const fitStyle = computed(() =>
 )
 const cardTransform = computed(() => (fit.value.scale < 1 ? `scale(${fit.value.scale})` : undefined))
 
-// 无背景时四周留 16px 透明边，避免导出时阴影被裁掉
+// 无背景时卡片就是窗口本身：没有边距和阴影，圆角也小一些，导出的图片紧贴窗口边缘
 const cardStyle = computed(() => ({
   background: props.background ? props.background.value : 'none',
-  padding: `${props.background ? props.padding : 16}px`,
+  padding: `${props.background ? props.padding : 0}px`,
   '--scale': props.fontSize / BASE_FONT_SIZE,
   transform: cardTransform.value,
 }))
@@ -90,6 +90,7 @@ function onFilenameBlur(e) {
   <div ref="cardEl" class="card" :style="cardStyle">
     <div
       class="window"
+      :class="{ bare: !background }"
       :style="{ background: theme.bg, '--fg': theme.fg, '--scale': fontSize / BASE_FONT_SIZE }"
     >
       <div class="titlebar">
@@ -173,6 +174,12 @@ function onFilenameBlur(e) {
 .mark-outside {
   position: absolute;
   color: rgba(255, 255, 255, 0.7);
+}
+
+/* 无背景：去掉阴影，圆角缩小，四角露出的透明区域尽量少 */
+.window.bare {
+  border-radius: 4px;
+  box-shadow: none;
 }
 
 /* 在窗口里占一行，不会盖住代码 */

@@ -185,7 +185,12 @@ export async function pngStats(page, buf) {
       if (data[i + 3] === 0) transparent++
     }
     const corner = (x, y) => data[(y * bmp.width + x) * 4 + 3]
+    const a = (x, y) => data[(y * bmp.width + x) * 4 + 3]
+    const mx = Math.floor(bmp.width / 2)
+    const my = Math.floor(bmp.height / 2)
     return {
+      // 四条边中点的透明度：图片紧贴窗口时都是不透明的
+      edgeAlpha: [a(mx, 0), a(mx, bmp.height - 1), a(0, my), a(bmp.width - 1, my)],
       colorCount: colors.size,
       transparentSamples: transparent,
       cornerAlpha: [corner(1, 1), corner(bmp.width - 2, 1), corner(1, bmp.height - 2), corner(bmp.width - 2, bmp.height - 2)],

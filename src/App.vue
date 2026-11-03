@@ -128,7 +128,6 @@ function toast(message) {
 
 // 手机上导出 3 倍，图片宽度就是手机上卡片的实际宽度（超过画布上限时会自动降低倍率）
 const exportOptions = () => ({
-  noBackground: settings.background === 'none',
   scale: isMobile.value ? SCALE_MOBILE : SCALE_DESKTOP,
 })
 

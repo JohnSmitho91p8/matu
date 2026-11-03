@@ -36,15 +36,37 @@ test.describe('exporting', () => {
     expect(pngSize(png).width).toBe(card.width * scaleFor(page))
   })
 
-  test('without a background the image is transparent around the window and keeps room for the shadow', async ({ page }) => {
+  test('without a background the image is just the window: no padding, no shadow, only the small rounded corners are transparent', async ({ page }) => {
     await setBackground(page, 'No background')
     const png = await exportPng(page)
     const card = await cardNaturalSize(page)
-    // 导出时透明边加宽到 80px：比页面上的 16px 每边多 64px
-    expect(pngSize(png).width).toBe((card.width + 128) * scaleFor(page))
+    const window = await page.locator('.window').evaluate((e) => ({
+      width: e.offsetWidth,
+      height: e.offsetHeight,
+      radius: getComputedStyle(e).borderTopLeftRadius,
+      shadow: getComputedStyle(e).boxShadow,
+    }))
+    // 卡片和窗口一样大；图片尺寸就是窗口尺寸
+    expect(card).toEqual({ width: window.width, height: window.height })
+    expect(window.radius).toBe('4px')
+    expect(window.shadow).toBe('none')
+    expect(pngSize(png)).toEqual({ width: card.width * scaleFor(page), height: card.height * scaleFor(page) })
     const stats = await pngStats(page, png)
+    expect(stats.edgeAlpha).toEqual([255, 255, 255, 255])
     expect(stats.cornerAlpha).toEqual([0, 0, 0, 0])
-    expect(stats.transparentSamples).toBeGreaterThan(0)
+  })
+
+  test('other backgrounds keep their padding, shadow and rounded corners', async ({ page }) => {
+    const window = await page.locator('.window').evaluate((e) => ({
+      radius: getComputedStyle(e).borderTopLeftRadius,
+      shadow: getComputedStyle(e).boxShadow,
+    }))
+    expect(window.radius).toBe('12px')
+    expect(window.shadow).not.toBe('none')
+    const png = await exportPng(page)
+    const card = await cardNaturalSize(page)
+    expect(pngSize(png).width).toBe(card.width * scaleFor(page))
+    expect(card.width).toBeGreaterThan(await page.locator('.window').evaluate((e) => e.offsetWidth))
   })
 
   test('highlighted lines and the signature are part of the image', async ({ page }) => {

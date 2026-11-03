@@ -81,7 +81,7 @@ test.describe('appearance settings', () => {
     }
     await setBackground(page, 'No background')
     expect(await bg()).toContain('none')
-    expect(await page.locator('.card').evaluate((e) => e.style.padding)).toBe('16px')
+    expect(await page.locator('.card').evaluate((e) => e.style.padding)).toBe('0px')
   })
 
   test('changes padding and font size', async ({ page }) => {
