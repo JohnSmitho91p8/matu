@@ -67,7 +67,7 @@ def write_chunks(src, family, subdir, css_name, chunks):
         os.remove(os.path.join(out_dir, f))
     css = []
     for i, (cs, scale) in enumerate(chunks):
-        uni = ','.join(f'U+{c:X}' for c in cs)
+        uni = ','.join(f'U+{c:X}' for c in cs)  # pyftsubset 的参数
         with tempfile.TemporaryDirectory() as tmp:
             tmp_ttf = os.path.join(tmp, 'c.ttf')
             subprocess.run(
@@ -81,11 +81,24 @@ def write_chunks(src, family, subdir, css_name, chunks):
             font.save(os.path.join(out_dir, f'{i}.woff2'))
         css.append(
             f"@font-face {{\n  font-family: '{family}';\n  font-weight: 400;\n  font-display: swap;\n  size-adjust: {scale * 100:g}%;\n"
-            f"  src: url('./{subdir}/{i}.woff2') format('woff2');\n  unicode-range: {uni.replace(',', ', ')};\n}}"
+            f"  src: url('./{subdir}/{i}.woff2') format('woff2');\n  unicode-range: {format_ranges(cs)};\n}}"
         )
     with open(os.path.join(FONTS_DIR, css_name), 'w') as fh:
         fh.write('\n'.join(css) + '\n')
     print(family, len(chunks), 'chunks')
+
+
+def format_ranges(codepoints):
+    """Merge consecutive code points into ranges: U+20-7E, U+A0-A5 (keeps the CSS small)."""
+    cps = sorted(set(codepoints))
+    parts, i = [], 0
+    while i < len(cps):
+        j = i
+        while j + 1 < len(cps) and cps[j + 1] == cps[j] + 1:
+            j += 1
+        parts.append(f'U+{cps[i]:X}' if i == j else f'U+{cps[i]:X}-{cps[j]:X}')
+        i = j + 1
+    return ', '.join(parts)
 
 
 def split(chars, size):

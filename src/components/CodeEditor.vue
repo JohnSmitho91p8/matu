@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { t } from '../i18n'
 import { cleanPastedText, replacesWholeDocument } from '../lib/paste'
-import { getHighlighter, highlightLines, getCommentColor } from '../lib/highlighter'
+import { ensureLoaded, preloadThemes, highlightLines, getCommentColor } from '../lib/highlighter'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -53,8 +53,15 @@ function renderQuick() {
   })
 }
 
-function renderFull() {
-  if (!highlighter.value) return
+// 语言或主题还没加载好时，先显示上一份高亮（或纯文字），加载完再换上
+async function renderFull() {
+  const theme = props.theme
+  const lang = props.lang
+  if (!highlighter.value || !highlighter.value.getLoadedLanguages().includes(lang) || !highlighter.value.getLoadedThemes().includes(theme)) {
+    highlighter.value = await ensureLoaded(lang, theme)
+    // 等待期间设置又变了：以最新的为准，由后一次调用处理
+    if (theme !== props.theme || lang !== props.lang) return
+  }
   cachedLines = lines.value
   cachedTokens = highlightLines(highlighter.value, props.modelValue, props.theme, props.lang)
   lineTokens.value = cachedTokens
@@ -64,8 +71,17 @@ function renderFull() {
 let timer
 function scheduleFull() {
   clearTimeout(timer)
-  timer = setTimeout(renderFull, 50)
+  // 代码很长时高亮要花更久，输入时多等一会儿再高亮，避免打字卡顿
+  const delay = Math.min(300, 50 + Math.max(0, lines.value.length - 200) * 0.25)
+  timer = setTimeout(renderFull, delay)
 }
+
+// 立刻完成还没做的高亮（导出前调用，保证图片里的颜色和最新的代码一致）
+async function flush() {
+  clearTimeout(timer)
+  await renderFull()
+}
+defineExpose({ flush })
 
 watch(
   () => props.modelValue,
@@ -78,8 +94,8 @@ watch(
 watch(() => [props.theme, props.lang], renderFull)
 
 onMounted(async () => {
-  highlighter.value = await getHighlighter()
-  renderFull()
+  await renderFull()
+  preloadThemes()
 })
 
 // ---- 编辑行为 ----
@@ -170,6 +186,7 @@ function onClick(e) {
       <div
         v-for="(tokens, i) in lineTokens"
         :key="i"
+        v-memo="[tokens, i, highlightedSet.has(i), hoverLine === i]"
         class="line"
         :class="{ hl: highlightedSet.has(i), hover: hoverLine === i }"
         :data-n="i + 1"
