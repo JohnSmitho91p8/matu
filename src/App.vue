@@ -11,31 +11,14 @@ import { isMobile } from './lib/useIsMobile'
 import { isSampleCode, lang, sampleCode, t, useDocumentLang } from './i18n'
 import { THEMES } from './config/themes'
 import { BACKGROUNDS } from './config/backgrounds'
-import { DEFAULT_SETTINGS, FONT_SIZES, PADDINGS, WATERMARK_MAX_LENGTH } from './config/defaults'
-import { isCodeLanguage, isDefaultFilename, languageById } from './config/languages'
-import { changeRatio, detectLanguage } from './lib/detectLanguage'
+import { FONT_SIZES, PADDINGS } from './config/defaults'
+import { languageById } from './config/languages'
+import { resolveDetectedLanguage, shouldRedetect } from './lib/detectLanguage'
 import { remapHighlights, toggleHighlight } from './lib/lineHighlights'
-import { loadSettings, saveSettings } from './lib/storage'
+import { saveSettings } from './lib/storage'
+import { loadAppSettings } from './lib/settings'
 
-const settings = reactive(
-  loadSettings(DEFAULT_SETTINGS, {
-    theme: (v) => THEMES.some((t) => t.id === v),
-    background: (v) => v === 'none' || BACKGROUNDS.some((b) => b.id === v),
-    padding: (v) => PADDINGS.some((p) => p.id === v),
-    fontSize: (v) => FONT_SIZES.some((f) => f.id === v),
-    lineNumbers: (v) => typeof v === 'boolean',
-    code: (v) => typeof v === 'string',
-    filename: (v) => typeof v === 'string' && v.trim() !== '',
-    language: (v) => v === 'auto' || isCodeLanguage(v),
-    detectedLanguage: isCodeLanguage,
-    filenameEdited: (v) => typeof v === 'boolean',
-    watermarkEnabled: (v) => typeof v === 'boolean',
-    watermarkText: (v) => typeof v === 'string' && v.length <= WATERMARK_MAX_LENGTH,
-    highlightedLines: (v) => Array.isArray(v) && v.every((n) => Number.isInteger(n) && n >= 0),
-  }),
-)
-// 旧版本保存的文件名没有「是否改过」的记录：不是默认名就认为是用户改过的
-if (!settings.filenameEdited && !isDefaultFilename(settings.filename)) settings.filenameEdited = true
+const settings = reactive(loadAppSettings())
 
 useDocumentLang()
 
@@ -45,9 +28,7 @@ const resolvedLanguage = computed(() =>
 )
 
 function detect() {
-  if (settings.language !== 'auto') return
-  const found = detectLanguage(settings.code)
-  if (found) settings.detectedLanguage = found
+  settings.detectedLanguage = resolveDetectedLanguage(settings.language, settings.detectedLanguage, settings.code)
 }
 
 // 只在粘贴、或内容大幅变化（超过 50%）时重新识别，逐字打字不会触发
@@ -57,9 +38,9 @@ watch(
   (code) => {
     // 编辑时让行高亮跟着原来那一行移动
     settings.highlightedLines = remapHighlights(settings.highlightedLines, lastCode, code)
-    const ratio = changeRatio(lastCode, code)
+    const redetect = shouldRedetect(lastCode, code)
     lastCode = code
-    if (code.trim() && ratio > 0.5) detect()
+    if (redetect) detect()
   },
 )
 // 切回「自动」时立刻识别一次

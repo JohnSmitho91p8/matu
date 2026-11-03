@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { t } from '../i18n'
+import { cleanPastedText, replacesWholeDocument } from '../lib/paste'
 import { getHighlighter, highlightLines, getCommentColor } from '../lib/highlighter'
 
 const props = defineProps({
@@ -102,15 +103,9 @@ function onPaste(e) {
   const text = e.clipboardData?.getData('text/plain')
   if (text == null) return
   e.preventDefault()
-  // 粘贴时选中了全部内容，等于换成一段全新的代码
   const el = textareaEl.value
-  const replacedAll = el.value.length > 0 && el.selectionStart === 0 && el.selectionEnd === el.value.length
-  // 去掉开头和结尾整行空白的行（中间的空行保留，首行自己的缩进也保留）
-  const cleaned = text
-    .replace(/\r\n?/g, '\n')
-    .replace(/\t/g, '    ')
-    .replace(/^(?:[^\S\n]*\n)+/, '')
-    .replace(/(?:\n[^\S\n]*)+$/, '')
+  const replacedAll = replacesWholeDocument(el.value, el.selectionStart, el.selectionEnd)
+  const cleaned = cleanPastedText(text)
   if (!cleaned.trim()) return
   insertText(cleaned)
   emit('paste-code', { replacedAll })

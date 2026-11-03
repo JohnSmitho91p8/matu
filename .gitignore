@@ -27,3 +27,8 @@ dist-ssr
 .claude/
 CLAUDE.md
 Matu-v2-设计说明书.md
+Matu-v3-设计说明书.md
+
+# Test output
+test-results/
+playwright-report/

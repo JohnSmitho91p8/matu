@@ -24,12 +24,12 @@ const lineNumbers = defineModel('lineNumbers')
 
 <template>
   <div class="toolbar" role="toolbar" :aria-label="t('toolbar.label')">
-    <div class="group">
+    <div class="group" data-testid="language">
       <span class="label">{{ t('toolbar.language') }}</span>
       <CodeLanguagePicker v-model="language" :detected="detectedLanguage" />
     </div>
     <div class="divider"></div>
-    <div class="group">
+    <div class="group" data-testid="theme">
       <span class="label">{{ t('toolbar.theme') }}</span>
       <button
         v-for="th in THEMES"
@@ -46,7 +46,7 @@ const lineNumbers = defineModel('lineNumbers')
       </button>
     </div>
     <div class="divider"></div>
-    <div class="group">
+    <div class="group" data-testid="background">
       <span class="label">{{ t('toolbar.background') }}</span>
       <button
         v-for="b in BACKGROUNDS"
@@ -69,7 +69,7 @@ const lineNumbers = defineModel('lineNumbers')
       ></button>
     </div>
     <div class="divider"></div>
-    <div class="group">
+    <div class="group" data-testid="padding">
       <span class="label">{{ t('toolbar.padding') }}</span>
       <div class="seg">
         <button
@@ -87,7 +87,7 @@ const lineNumbers = defineModel('lineNumbers')
       </div>
     </div>
     <div class="divider"></div>
-    <div class="group">
+    <div class="group" data-testid="font-size">
       <span class="label">{{ t('toolbar.fontSize') }}</span>
       <div class="seg">
         <button
@@ -104,7 +104,7 @@ const lineNumbers = defineModel('lineNumbers')
       </div>
     </div>
     <div class="divider"></div>
-    <div class="group">
+    <div class="group" data-testid="line-numbers">
       <span class="label">{{ t('toolbar.lineNumbers') }}</span>
       <button
         class="switch"
@@ -119,7 +119,7 @@ const lineNumbers = defineModel('lineNumbers')
       </button>
     </div>
     <div class="divider"></div>
-    <div class="group">
+    <div class="group" data-testid="watermark">
       <WatermarkPicker v-model:enabled="watermarkEnabled" v-model:text="watermarkText" />
     </div>
     <template v-if="highlightCount > 0">

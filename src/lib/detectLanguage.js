@@ -96,3 +96,14 @@ export function changeRatio(prev, next) {
   while (s < minLen - p && prev[prev.length - 1 - s] === next[next.length - 1 - s]) s++
   return (max - p - s) / max
 }
+
+// 手动锁定语言时不再识别；识别不出来（得分太低或并列）时保持当前语言
+export function resolveDetectedLanguage(mode, current, code) {
+  if (mode !== 'auto') return current
+  return detectLanguage(code) ?? current
+}
+
+// 只在内容大幅变化（超过 50%）时重新识别，逐字打字不会触发
+export function shouldRedetect(prevCode, nextCode) {
+  return nextCode.trim() !== '' && changeRatio(prevCode, nextCode) > 0.5
+}
