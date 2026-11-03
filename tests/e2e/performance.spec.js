@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test'
-import { isMobile, openApp, typeCode } from './helpers'
+import { test } from '@playwright/test'
+import { expectBelow, isMobile, openApp, typeCode } from './helpers'
 
 const lines = (n) => Array.from({ length: n }, (_, i) => `    int value${i} = ${i} * 2 + compute(${i}); // line ${i}`).join('\n')
 
@@ -57,7 +57,7 @@ test.describe('export speed', () => {
       console.log(`PERF ${info.project.name} | ${s.name} | ${runs.join(' / ')} ms`)
       info.annotations.push({ type: 'perf', description: runs.join(' / ') + ' ms' })
       // 第一次可能还没生成完，看后两次
-      expect(Math.max(...runs.slice(1))).toBeLessThan(s.limit)
+      expectBelow(Math.max(...runs.slice(1)), s.limit, `${s.name}: click to image`)
     })
   }
 })
@@ -94,7 +94,7 @@ test.describe('typing while the image is prepared in the background', () => {
         return Math.max(...window.__gaps)
       })
       console.log(`TYPING ${info.project.name} | ${name}, typing while the image is being prepared | slowest frame: ${Math.round(worst)} ms`)
-      expect(worst).toBeLessThan(count === 200 ? 600 : 200)
+      expectBelow(worst, count === 200 ? 600 : 200, `${name}: slowest frame`)
     })
   }
 })
@@ -110,6 +110,6 @@ test.describe('long code is exported on demand', () => {
     await page.waitForTimeout(1500)
     const ms = await timeToImage(page)
     console.log(`PERF ${info.project.name} | 1200 lines, on demand | ${ms} ms`)
-    expect(ms).toBeLessThan(30_000)
+    expectBelow(ms, 30_000, '1200 lines: click to image')
   })
 })

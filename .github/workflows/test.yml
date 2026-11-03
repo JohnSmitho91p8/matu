@@ -15,9 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  unit:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,17 +25,33 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Unit tests
-        run: npm test
-      - name: Install browsers
-        run: npx playwright install --with-deps chromium webkit
+      - run: npm test
+
+  # 四个浏览器 / 设备组合各占一台机器并行运行，总时长约等于最慢的那一组。
+  # 计时类的断言在 CI 里只记录数据、不判定失败（GitHub 的机器比开发机慢得多），其余检查照常
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium-desktop, webkit-desktop, chromium-iphone, webkit-iphone]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install browser
+        run: npx playwright install --with-deps ${{ startsWith(matrix.project, 'chromium') && 'chromium' || 'webkit' }}
       - name: End-to-end tests
-        run: npm run test:e2e
+        run: npx playwright test --project=${{ matrix.project }}
       - name: Upload report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.project }}
           path: |
             playwright-report/
             test-results/

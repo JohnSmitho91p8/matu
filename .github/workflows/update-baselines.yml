@@ -11,7 +11,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,8 +20,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
-      - run: npm run test:e2e:update
+      # 只跑截图对比（电脑尺寸，两个引擎）；其余测试不在这里运行
+      - name: Generate baselines
+        run: npx playwright test screenshots.spec.js --project=chromium-desktop --project=webkit-desktop --update-snapshots
+        continue-on-error: true
       - name: Commit new baselines
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

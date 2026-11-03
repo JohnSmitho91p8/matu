@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { MAX_PIXELS_DESKTOP, MAX_PIXELS_IOS, chooseScale } from '../../src/lib/exporter'
-import { cardNaturalSize, exportPng, isMobile, openApp, pngSize, pngStats, typeCode } from './helpers'
+import { cardNaturalSize, expectBelow, exportPng, isMobile, openApp, pngSize, pngStats, typeCode } from './helpers'
 
 // 点「导出」按钮：电脑上是「Download」，手机上是顶栏的「Share」
 const exportButton = (page) => page.getByRole('button', { name: isMobile(page) ? 'Share' : 'Download' })
@@ -113,8 +113,8 @@ test.describe('very many lines', () => {
     console.log(
       `TYPING ${test.info().project.name} | 1200 lines | slowest frame while typing: ${Math.round(whileTyping)} ms, including the final highlight: ${Math.round(overall)} ms`,
     )
-    expect(whileTyping).toBeLessThan(120)
-    expect(overall).toBeLessThan(400)
+    expectBelow(whileTyping, 120, '1200 lines: slowest frame while typing')
+    expectBelow(overall, 400, '1200 lines: slowest frame including the final highlight')
 
     const card = await cardNaturalSize(page)
     const iOS = isMobile(page)
@@ -159,6 +159,6 @@ test.describe('unusual input and environment', () => {
     console.log(`FONT TIMEOUT ${test.info().project.name} | export finished after ${took} ms with fonts that never load`)
     expect(pngSize(png).width).toBeGreaterThan(0)
     expect((await pngStats(page, png)).colorCount).toBeGreaterThan(20)
-    expect(took).toBeLessThan(8000)
+    expectBelow(took, 8000, 'export with fonts that never load')
   })
 })
