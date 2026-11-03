@@ -32,3 +32,6 @@ Matu-v3-设计说明书.md
 # Test output
 test-results/
 playwright-report/
+
+# Visual comparison output
+compare/

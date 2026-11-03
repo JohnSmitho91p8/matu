@@ -17,7 +17,25 @@ const THEME_LOADERS = {
   'vitesse-dark': () => import('shiki/themes/vitesse-dark.mjs'),
   'catppuccin-mocha': () => import('shiki/themes/catppuccin-mocha.mjs'),
   'github-light': () => import('shiki/themes/github-light.mjs'),
-  'vitesse-light': () => import('shiki/themes/vitesse-light.mjs'),
+  'vitesse-light': () => import('shiki/themes/vitesse-light.mjs').then((m) => fixColors(m.default, VITESSE_LIGHT_FIXES)),
+}
+
+// Vitesse Light 的原版配色在白底上对比度不足（部分 token 只有 2.3~4.2，低于 4.5:1）；
+// 把不达标的颜色各自加深到刚好达标（同一色相，只压低亮度）。其余三套主题原样使用
+const VITESSE_LIGHT_FIXES = {
+  '#999999': '#777777', // 标点
+  '#a0ada0': '#6b736b', // 注释（同时决定行号颜色）
+  '#b07d48': '#9a6d3f',
+  '#998418': '#887515',
+  '#2e8f82': '#2a8478',
+  '#b56959': '#ab6354',
+  '#59873a': '#568238',
+}
+
+function fixColors(theme, fixes) {
+  let json = JSON.stringify(theme)
+  for (const [from, to] of Object.entries(fixes)) json = json.replaceAll(new RegExp(from, 'gi'), to)
+  return JSON.parse(json)
 }
 
 export function getHighlighter() {

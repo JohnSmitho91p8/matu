@@ -178,7 +178,7 @@ function onClick(e) {
       '--digits': digits,
       fontSize: `${fontSize}px`,
       '--k': mobile ? Math.max(1, 16 / fontSize) : 1,
-      '--lineno': commentColor ? `color-mix(in srgb, ${commentColor} 60%, transparent)` : 'inherit',
+      '--lineno': commentColor ? `color-mix(in srgb, ${commentColor} 80%, transparent)` : 'inherit',
     }"
   >
     <!-- 高亮层：撑开卡片的宽高 -->
