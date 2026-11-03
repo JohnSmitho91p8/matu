@@ -38,6 +38,8 @@ npm install
 npm run dev      # 然后打开 http://localhost:5173/matu/
 npm run build    # 打包到 dist 文件夹
 npm run preview  # 预览打包后的版本
+npm test         # 单元测试（Vitest）
+npm run test:e2e # 端到端测试（Playwright；首次运行前先执行 npx playwright install chromium webkit）
 ```
 
 想在同一个 Wi-Fi 下的手机上试用，运行 `npm run dev -- --host`，用手机打开终端里显示的 `Network` 地址。（分享和复制图片需要 HTTPS，这两项请在线上版本测试。）

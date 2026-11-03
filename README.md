@@ -38,6 +38,8 @@ npm install
 npm run dev      # then open http://localhost:5173/matu/
 npm run build    # production build in dist/
 npm run preview  # preview the production build
+npm test         # unit tests (Vitest)
+npm run test:e2e # end-to-end tests (Playwright; first run: npx playwright install chromium webkit)
 ```
 
 To try it on a phone on the same Wi-Fi, run `npm run dev -- --host` and open the `Network` address it prints. (Sharing and copying images need HTTPS, so test those on the deployed site.)

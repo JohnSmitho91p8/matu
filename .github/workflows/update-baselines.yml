@@ -1,0 +1,34 @@
+name: Update screenshot baselines
+
+# 手动运行：在 GitHub 的 Ubuntu 环境里重新生成截图对比的基准图并提交。
+# 字体渲染随系统而异，本地（macOS）和这里（Linux）的基准图分开存放。
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:e2e:update
+      - name: Commit new baselines
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/__screenshots__
+          if git diff --cached --quiet; then
+            echo "Baselines are already up to date"
+          else
+            git commit -m "Update screenshot baselines"
+            git push
+          fi
