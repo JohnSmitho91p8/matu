@@ -133,6 +133,17 @@ export function copyImage(blobPromise) {
   return navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })])
 }
 
+// 复制文字。文字是异步生成的：Safari 要求在点击的同一刻就开始写剪贴板，所以把还没算好的文字交给 ClipboardItem
+export async function copyText(textPromise) {
+  if (typeof ClipboardItem === 'function' && navigator.clipboard?.write) {
+    const blob = textPromise.then((text) => new Blob([text], { type: 'text/plain' }))
+    // 文字没生成出来（太长等）时，blob 的 promise 会失败：保持原来的错误，让调用方区分
+    await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })])
+    return
+  }
+  await navigator.clipboard.writeText(await textPromise)
+}
+
 export async function downloadImage(blobPromise, filename) {
   const blob = await blobPromise
   const url = URL.createObjectURL(blob)

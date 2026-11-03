@@ -41,7 +41,7 @@ test.describe('nothing to export', () => {
   test('the message is translated', async ({ page }) => {
     await openApp(page, { storage: { 'matu:lang': 'ja' } })
     await typeCode(page, '')
-    await page.locator(isMobile(page) ? '.btn-primary' : '.btn-outline').click()
+    await page.locator(isMobile(page) ? '.btn-primary' : '.btn-outline:not([data-testid="copy-link"])').click()
     await expect(page.locator('.toast')).toHaveText('書き出すコードがありません')
   })
 })

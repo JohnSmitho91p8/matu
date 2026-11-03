@@ -3,7 +3,7 @@ import LanguageSwitcher from './LanguageSwitcher.vue'
 import { t } from '../i18n'
 
 defineProps({ mobile: { type: Boolean, default: false } })
-defineEmits(['download', 'copy', 'share'])
+defineEmits(['download', 'copy', 'share', 'copy-link'])
 </script>
 
 <template>
@@ -11,32 +11,49 @@ defineEmits(['download', 'copy', 'share'])
     <div class="logo">{{ t('app.logo') }}</div>
     <div class="actions">
       <LanguageSwitcher :compact="mobile" />
-      <!-- 手机：下载是图标按钮，主按钮是分享 -->
-      <button
-        v-if="mobile"
-        class="icon-btn"
-        :title="t('top.download')"
-        :aria-label="t('top.download')"
-        @click="$emit('download')"
-      >
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 4v11M7 11l5 5 5-5M5 20h14" />
-        </svg>
-      </button>
-      <button v-else class="btn btn-outline" :title="t('top.download.title')" @click="$emit('download')">
-        {{ t('top.download') }}
-      </button>
-      <button
-        v-if="mobile"
-        class="btn btn-primary btn-lg"
-        :title="t('top.share.title')"
-        @click="$emit('share')"
-      >
-        {{ t('top.share') }}
-      </button>
-      <button v-else class="btn btn-primary" :title="t('top.copy.title')" @click="$emit('copy')">
-        {{ t('top.copy') }}
-      </button>
+      <!-- 手机：复制链接、下载是图标按钮，主按钮是分享 -->
+      <template v-if="mobile">
+        <button
+          class="icon-btn"
+          data-testid="copy-link"
+          :title="t('top.copyLink')"
+          :aria-label="t('top.copyLink')"
+          @click="$emit('copy-link')"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />
+          </svg>
+        </button>
+        <button
+          class="icon-btn"
+          :title="t('top.download')"
+          :aria-label="t('top.download')"
+          @click="$emit('download')"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 4v11M7 11l5 5 5-5M5 20h14" />
+          </svg>
+        </button>
+        <button class="btn btn-primary btn-lg" :title="t('top.share.title')" @click="$emit('share')">
+          {{ t('top.share') }}
+        </button>
+      </template>
+      <template v-else>
+        <button
+          class="btn btn-outline"
+          data-testid="copy-link"
+          :title="t('top.copyLink') + ' (Cmd/Ctrl + Shift + L)'"
+          @click="$emit('copy-link')"
+        >
+          {{ t('top.copyLink') }}
+        </button>
+        <button class="btn btn-outline" :title="t('top.download.title')" @click="$emit('download')">
+          {{ t('top.download') }}
+        </button>
+        <button class="btn btn-primary" :title="t('top.copy.title')" @click="$emit('copy')">
+          {{ t('top.copy') }}
+        </button>
+      </template>
     </div>
   </header>
 </template>

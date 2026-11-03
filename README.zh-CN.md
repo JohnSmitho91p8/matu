@@ -30,6 +30,7 @@
 | 快捷键 | 作用 |
 |---|---|
 | `Cmd/Ctrl + Shift + C` | 复制图片 |
+| `Cmd/Ctrl + Shift + L` | 复制链接 |
 | `Cmd/Ctrl + S` | 下载图片 |
 
 ## 设计原则

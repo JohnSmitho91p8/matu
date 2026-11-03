@@ -11,6 +11,7 @@ import {
   SCALE_DESKTOP,
   SCALE_MOBILE,
   copyImage,
+  copyText,
   downloadImage,
   exportProblem,
   loadExportLibrary,
@@ -28,6 +29,7 @@ import { resolveDetectedLanguage, shouldRedetect } from './lib/detectLanguage'
 import { remapHighlights, toggleHighlight } from './lib/lineHighlights'
 import { saveSettings } from './lib/storage'
 import { loadAppSettings } from './lib/settings'
+import { decodeShare, encodeShare, shareDataFromHash } from './lib/shareLink'
 
 const settings = reactive(loadAppSettings())
 
@@ -122,11 +124,23 @@ const fontSize = computed(() => FONT_SIZES.find((f) => f.id === settings.fontSiz
 // ---- 导出 ----
 const card = ref(null)
 const toastMessage = ref('')
+const toastAction = ref(null)
 let toastTimer
-function toast(message) {
+// action：提示旁边的操作按钮 { label, run }；duration：停留的毫秒数
+function toast(message, { action = null, duration = 2200 } = {}) {
   toastMessage.value = message
+  toastAction.value = action
   clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => (toastMessage.value = ''), 2200)
+  toastTimer = setTimeout(() => {
+    toastMessage.value = ''
+    toastAction.value = null
+  }, duration)
+}
+
+function dismissToast() {
+  clearTimeout(toastTimer)
+  toastMessage.value = ''
+  toastAction.value = null
 }
 
 // 手机上导出 3 倍，图片宽度就是手机上卡片的实际宽度（超过画布上限时会自动降低倍率）
@@ -259,13 +273,85 @@ async function copy() {
   }
 }
 
-// Cmd/Ctrl + Shift + C 复制图片；Cmd/Ctrl + S 下载图片
+// ---- 分享链接 ----
+// 不含 # 的页面地址
+const pageUrl = () => location.origin + location.pathname + location.search
+
+async function copyLink() {
+  if (!settings.code.trim()) return toast(t('toast.nothingToShare'))
+  // 生成失败的原因单独记下来：浏览器写剪贴板失败时给出的错误不一定保留原来的错误
+  let failure = null
+  const urlPromise = encodeShare(settings, pageUrl()).then((r) => {
+    if (!r.ok) {
+      failure = r.reason
+      throw new Error(r.reason)
+    }
+    return r.url
+  })
+  try {
+    await copyText(urlPromise)
+    toast(t('toast.linkCopied'))
+  } catch {
+    if (failure) return toast(t(failure === 'too-long' ? 'toast.linkTooLong' : 'toast.linkUnsupported'))
+    // 剪贴板用不了：手机上调起系统分享面板，只分享这个网址
+    if (isMobile.value && navigator.share) {
+      try {
+        await navigator.share({ url: await urlPromise })
+        return
+      } catch (e) {
+        if (e?.name === 'AbortError') return
+      }
+    }
+    toast(t('toast.linkCopyFailed'))
+  }
+}
+
+// 打开分享链接：先把现在的设置完整存一份，用链接里的内容替换，提示里带「撤销」
+async function openSharedLink() {
+  const data = shareDataFromHash(location.hash)
+  if (data === null) return
+  // 无论成功与否，都去掉网址里的 #s=…：刷新不会再次覆盖，也不把很长的网址留在地址栏
+  history.replaceState(null, '', pageUrl())
+  const result = await decodeShare(data)
+  if (!result.ok) return toast(t('toast.badLink'))
+
+  const before = JSON.parse(JSON.stringify(settings))
+  applySettings(result.settings)
+  toast(t('toast.openedShared'), {
+    duration: 6000,
+    action: {
+      label: t('toast.undo'),
+      run: () => {
+        applySettings(before)
+        dismissToast()
+      },
+    },
+  })
+}
+
+// 换成一份新设置（分享的内容或撤销前的内容）。先更新 lastCode：标记是跟着设置一起来的，不要被「代码变了」的逻辑再移动一次
+function applySettings(next) {
+  lastCode = next.code
+  Object.assign(settings, next)
+  highlightAnchor = null
+  detect()
+}
+onMounted(() => {
+  openSharedLink()
+  window.addEventListener('hashchange', openSharedLink)
+})
+onBeforeUnmount(() => window.removeEventListener('hashchange', openSharedLink))
+
+// Cmd/Ctrl + Shift + C 复制图片；Cmd/Ctrl + Shift + L 复制链接；Cmd/Ctrl + S 下载图片
 function onKeydown(e) {
   if (!(e.metaKey || e.ctrlKey) || e.altKey) return
   const key = e.key.toLowerCase()
   if (e.shiftKey && key === 'c') {
     e.preventDefault()
     copy()
+  } else if (e.shiftKey && key === 'l') {
+    e.preventDefault()
+    copyLink()
   } else if (!e.shiftKey && key === 's') {
     e.preventDefault()
     download()
@@ -277,7 +363,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
 <template>
   <div class="app">
-    <TopBar :mobile="isMobile" @download="download" @copy="copy" @share="share" />
+    <TopBar :mobile="isMobile" @download="download" @copy="copy" @share="share" @copy-link="copyLink" />
     <main class="stage" :class="{ mobile: isMobile }">
       <CodeCard
         ref="card"
@@ -314,7 +400,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       v-model:start-line="settings.startLine"
     />
     <PreviewOverlay :url="previewUrl" @close="closePreview" />
-    <Toast :message="toastMessage" />
+    <Toast :message="toastMessage" :action="toastAction" />
   </div>
 </template>
 

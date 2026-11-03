@@ -30,6 +30,7 @@ Turn code into a beautiful image — copy it in one click and share it anywhere.
 | Shortcut | Action |
 |---|---|
 | `Cmd/Ctrl + Shift + C` | Copy image |
+| `Cmd/Ctrl + Shift + L` | Copy link |
 | `Cmd/Ctrl + S` | Download image |
 
 ## Design principles

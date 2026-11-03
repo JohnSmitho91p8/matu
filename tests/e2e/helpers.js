@@ -156,6 +156,29 @@ export async function pasteCode(page, code, { replaceAll = true } = {}) {
 
 export const editorValue = (page) => page.locator('textarea').inputValue()
 
+// ---- 剪贴板 ----
+// 浏览器在自动化里读不到剪贴板（WebKit 没有这个权限）：在页面加载前换上一个记录写入内容的剪贴板。必须在 openApp 之前调用
+export const watchClipboard = (page) =>
+  page.addInitScript(() => {
+    const record = (text) => {
+      window.__copiedText = text
+      window.__copiedCount = (window.__copiedCount ?? 0) + 1
+    }
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text) => record(text),
+        write: async (items) => {
+          const blob = await items[0].getType('text/plain')
+          record(await blob.text())
+        },
+      },
+    })
+  })
+
+// 最近一次写进剪贴板的文字（还没写过是 undefined）
+export const copiedText = (page) => page.evaluate(() => window.__copiedText)
+
 // ---- 导出 ----
 
 // 点「下载」（手机上是预览层里的图片），返回 PNG 的二进制内容

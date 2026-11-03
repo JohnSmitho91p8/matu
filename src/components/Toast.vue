@@ -1,10 +1,17 @@
 <script setup>
-defineProps({ message: { type: String, default: '' } })
+// action：可选的操作按钮 { label, run }，例如「撤销」
+defineProps({
+  message: { type: String, default: '' },
+  action: { type: Object, default: null },
+})
 </script>
 
 <template>
   <Transition name="toast">
-    <div v-if="message" class="toast">{{ message }}</div>
+    <div v-if="message" class="toast" role="status">
+      <span>{{ message }}</span>
+      <button v-if="action" class="action" @click="action.run()">{{ action.label }}</button>
+    </div>
   </Transition>
 </template>
 
@@ -26,6 +33,30 @@ defineProps({ message: { type: String, default: '' } })
   max-width: calc(100vw - 32px);
   text-align: center;
   z-index: 10;
+}
+
+.toast:has(.action) {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 10px;
+  text-align: left;
+}
+
+.action {
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.action:hover {
+  background: rgba(255, 255, 255, 0.26);
 }
 
 .toast-enter-active,
