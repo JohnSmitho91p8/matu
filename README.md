@@ -17,6 +17,8 @@ Turn code into a beautiful image — copy it in one click and share it anywhere.
 - **Optional signature** — add your handle (for example `@yourname`) to the corner of the image
 - **Good CJK support** — JetBrains Mono for code, LXGW WenKai Mono for Chinese and Japanese comments and D2Coding for Korean, all self-hosted and aligned to the same character grid
 - **One-click copy** to the clipboard (2× resolution), or download as PNG
+- **Near-instant copy, download and share** — the image is prepared in the background while you edit, so it's ready the moment you click
+- **A clean toolbar** — the theme and background you change most stay on the bar, and everything else lives in a Settings panel
 - **Works great on iPhone** — a touch-friendly layout with a bottom toolbar, and a Share button that opens the system share sheet (save to Photos, send to a chat, AirDrop). If sharing isn't available, long-press the preview image to save it
 - **Multilingual interface** — English, 简体中文, 日本語 and 한국어 (picked from your browser language, switchable any time)
 - **Remembers your settings and code** in the browser's local storage
