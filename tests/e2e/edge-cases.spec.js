@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { MAX_PIXELS_IOS, chooseScale } from '../../src/lib/exporter'
 import {
   cardNaturalSize,
   editorValue,
@@ -63,11 +64,13 @@ test.describe('unusual input', () => {
     expect(info.rowHeights).toEqual([24])
     expect(info.scrollWidth).toBeLessThanOrEqual(info.innerWidth)
     const png = await exportPng(page)
-    expect(pngSize(png).width).toBe(info.natural * scaleFor(page))
+    // 太宽时导出倍率会自动降低（手机上 3 倍会超过画布单边上限）：期望的倍率按同一套规则算出
+    const card = await cardNaturalSize(page)
+    const expected = isMobile(page) ? chooseScale(card.width, card.height, 3, { maxPixels: MAX_PIXELS_IOS }) : 2
+    expect(pngSize(png).width).toBe(info.natural * expected)
   })
 
   test('a few hundred lines still render and export', async ({ page }) => {
-    test.setTimeout(180_000)
     await openApp(page)
     const code = Array.from({ length: 300 }, (_, i) => `    int v${i} = ${i} * 2; // line ${i}`).join('\n')
     await typeCode(page, code)

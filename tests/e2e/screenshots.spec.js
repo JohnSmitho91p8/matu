@@ -1,5 +1,7 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { expect, test } from '@playwright/test'
-import { exportPng, openApp, setBackground, setTheme, setWatermark, typeCode } from './helpers'
+import { exportPng, openApp, pngSize, setBackground, setTheme, setWatermark, typeCode } from './helpers'
 
 // 固定的示例代码，含中、日、韩注释：字体或样式被意外改动时，导出的图会变，这里的对比就会失败
 const CODE = `// Fast power: a^b mod p
@@ -60,5 +62,27 @@ test.describe('export screenshots', () => {
     await page.waitForTimeout(400)
     const png = await exportPng(page)
     expect(png).toMatchSnapshot('highlight-signature-no-background.png', { maxDiffPixelRatio: 0.002, threshold: 0.05 })
+  })
+})
+
+// 手机（3 倍）导出的图，排版应该和电脑（2 倍）的基准图完全一样，只是每个像素的倍率不同：尺寸正好是 1.5 倍
+test.describe('phone exports lay out exactly like desktop exports', () => {
+  test.skip(({ isMobile }) => !isMobile, 'phone sizes only')
+
+  test('same picture, 1.5 times the pixels', async ({ page, browserName }) => {
+    await openApp(page)
+    await typeCode(page, CODE)
+    await page.waitForTimeout(400)
+    const png = await exportPng(page)
+    const baseline = path.join(
+      import.meta.dirname,
+      '__screenshots__',
+      process.platform,
+      `${browserName}-desktop`,
+      'theme-vitesse-dark.png',
+    )
+    test.skip(!fs.existsSync(baseline), 'no desktop baseline on this platform')
+    const desktop = pngSize(fs.readFileSync(baseline))
+    expect(pngSize(png)).toEqual({ width: desktop.width * 1.5, height: desktop.height * 1.5 })
   })
 })

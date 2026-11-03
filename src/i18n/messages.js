@@ -53,6 +53,8 @@ export const messages = {
     'toast.copied': 'Copied. You can paste it anywhere.',
     'toast.copyFailed': 'Copy failed, downloading the image instead',
     'toast.exportFailed': 'Export failed, please try again',
+    'toast.nothingToExport': 'There is no code to export',
+    'toast.tooLarge': 'The code is too long to make an image',
   },
   'zh-CN': {
     'app.logo': '码图',
@@ -98,6 +100,8 @@ export const messages = {
     'toast.copied': '已复制，可以直接粘贴',
     'toast.copyFailed': '复制失败，已改为下载图片',
     'toast.exportFailed': '导出失败，请重试',
+    'toast.nothingToExport': '没有可导出的代码',
+    'toast.tooLarge': '代码太长，无法生成图片',
   },
   ja: {
     'app.logo': 'Matu',
@@ -143,6 +147,8 @@ export const messages = {
     'toast.copied': 'コピーしました。そのまま貼り付けられます',
     'toast.copyFailed': 'コピーに失敗したため、画像をダウンロードします',
     'toast.exportFailed': '書き出しに失敗しました。もう一度お試しください',
+    'toast.nothingToExport': '書き出すコードがありません',
+    'toast.tooLarge': 'コードが長すぎて画像を作れません',
   },
   ko: {
     'app.logo': 'Matu',
@@ -188,6 +194,8 @@ export const messages = {
     'toast.copied': '복사했습니다. 바로 붙여넣을 수 있어요',
     'toast.copyFailed': '복사에 실패하여 이미지를 다운로드합니다',
     'toast.exportFailed': '내보내기에 실패했습니다. 다시 시도해 주세요',
+    'toast.nothingToExport': '내보낼 코드가 없습니다',
+    'toast.tooLarge': '코드가 너무 길어 이미지를 만들 수 없습니다',
   },
 }
 

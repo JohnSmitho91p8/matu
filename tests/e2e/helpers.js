@@ -139,12 +139,17 @@ export async function exportPng(page) {
     await page.getByRole('button', { name: 'Download' }).tap()
     const img = page.locator('.preview img')
     await expect(img).toBeVisible({ timeout: 30_000 })
-    const bytes = await img.evaluate(async (el) => {
-      const res = await fetch(el.src)
-      return Array.from(new Uint8Array(await res.arrayBuffer()))
+    // 图片很大时，用 base64 字符串传回来，比传一个几百万项的数组快得多
+    const base64 = await img.evaluate(async (el) => {
+      const blob = await (await fetch(el.src)).blob()
+      return new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result).split(',')[1])
+        reader.readAsDataURL(blob)
+      })
     })
     await page.locator('.preview .close').tap()
-    return Buffer.from(bytes)
+    return Buffer.from(base64, 'base64')
   }
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 30_000 }),
@@ -164,8 +169,8 @@ export function pngSize(buf) {
 
 // 判断图片是否非空：解码后看有没有多种颜色（用页面里的 canvas 解码）
 export async function pngStats(page, buf) {
-  return page.evaluate(async (bytes) => {
-    const bmp = await createImageBitmap(new Blob([new Uint8Array(bytes)], { type: 'image/png' }))
+  return page.evaluate(async (base64) => {
+    const bmp = await createImageBitmap(await (await fetch(`data:image/png;base64,${base64}`)).blob())
     const c = document.createElement('canvas')
     c.width = bmp.width
     c.height = bmp.height
@@ -185,7 +190,7 @@ export async function pngStats(page, buf) {
       transparentSamples: transparent,
       cornerAlpha: [corner(1, 1), corner(bmp.width - 2, 1), corner(1, bmp.height - 2), corner(bmp.width - 2, bmp.height - 2)],
     }
-  }, [...buf])
+  }, buf.toString('base64'))
 }
 
 // 卡片在页面上的原始尺寸（不受缩小显示影响）

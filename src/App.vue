@@ -1,12 +1,23 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import TopBar from './components/TopBar.vue'
 import CodeCard from './components/CodeCard.vue'
 import Toolbar from './components/Toolbar.vue'
 import MobileToolbar from './components/MobileToolbar.vue'
 import PreviewOverlay from './components/PreviewOverlay.vue'
 import Toast from './components/Toast.vue'
-import { SCALE_DESKTOP, SCALE_MOBILE, copyImage, downloadImage, renderBlob, shareImage } from './lib/exporter'
+import {
+  ExportError,
+  SCALE_DESKTOP,
+  SCALE_MOBILE,
+  copyImage,
+  downloadImage,
+  exportProblem,
+  loadExportLibrary,
+  renderBlob,
+  shareImage,
+} from './lib/exporter'
+import { createExportCache } from './lib/exportCache'
 import { isMobile } from './lib/useIsMobile'
 import { isSampleCode, lang, sampleCode, t, useDocumentLang } from './i18n'
 import { THEMES } from './config/themes'
@@ -115,11 +126,85 @@ function toast(message) {
   toastTimer = setTimeout(() => (toastMessage.value = ''), 2200)
 }
 
-// 手机上导出 3 倍，图片宽度就是手机上卡片的实际宽度
+// 手机上导出 3 倍，图片宽度就是手机上卡片的实际宽度（超过画布上限时会自动降低倍率）
 const exportOptions = () => ({
   noBackground: settings.background === 'none',
   scale: isMobile.value ? SCALE_MOBILE : SCALE_DESKTOP,
 })
+
+// 会影响图片内容的全部状态。摘要不变，缓存里的图片就还有效
+const exportKey = computed(() =>
+  JSON.stringify([
+    settings.code,
+    resolvedLanguage.value,
+    settings.theme,
+    settings.background,
+    settings.padding,
+    settings.fontSize,
+    settings.lineNumbers,
+    settings.highlightedLines,
+    settings.filename,
+    watermark.value,
+    isMobile.value,
+  ]),
+)
+
+// 后台预先生成的图片（只保留最新一份）。点复制、下载、分享时直接用，不用再等
+const imageCache = createExportCache(async () => {
+  await card.value.flush()
+  await nextTick()
+  return renderBlob(card.value.cardEl, exportOptions())
+})
+
+const currentImage = () => imageCache.get(exportKey.value)
+
+// 点击时先同步检查：没有代码、图片太大都直接提示，不生成空图
+function canExport() {
+  if (!settings.code.trim()) {
+    toast(t('toast.nothingToExport'))
+    return false
+  }
+  if (exportProblem(card.value.cardEl, exportOptions())) {
+    toast(t('toast.tooLarge'))
+    return false
+  }
+  return true
+}
+
+function reportExportError(e) {
+  if (e instanceof ExportError) toast(t(e.code === 'empty' ? 'toast.nothingToExport' : 'toast.tooLarge'))
+  else {
+    console.error(e)
+    toast(t('toast.exportFailed'))
+  }
+}
+
+const PREWARM_MAX_LINES = 400
+// 停下来一会儿后，在浏览器空闲时提前生成图片。代码越长生成越久，多等一会儿，避免影响打字
+const idle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 0))
+let prewarmTimer
+function schedulePrewarm() {
+  clearTimeout(prewarmTimer)
+  if (!settings.code.trim()) return
+  const lineCount = settings.code.split('\n').length
+  // 太长的代码生成要好几秒，会让输入卡住，不提前生成（点击时再现场生成）
+  if (lineCount > PREWARM_MAX_LINES) return
+  const delay = Math.min(2000, 500 + lineCount * 4)
+  prewarmTimer = setTimeout(() => {
+    if (document.hidden || !card.value) return
+    idle(() => {
+      if (!card.value || exportProblem(card.value.cardEl, exportOptions())) return
+      imageCache.prewarm(exportKey.value)
+    })
+  }, delay)
+}
+watch(exportKey, schedulePrewarm)
+onMounted(() => {
+  schedulePrewarm()
+  // 空闲时把导出用的代码提前下载好，第一次导出不用等
+  idle(() => loadExportLibrary().catch(() => {}))
+})
+onBeforeUnmount(() => clearTimeout(prewarmTimer))
 
 // 预览层：系统分享用不了时（例如微信内置浏览器），显示图片让用户长按保存
 const previewUrl = ref('')
@@ -135,34 +220,36 @@ function closePreview() {
 }
 
 async function share() {
+  if (!canExport()) return
   try {
-    const result = await shareImage(card.value.cardEl, settings.filename, exportOptions())
+    const result = await shareImage(currentImage(), settings.filename)
     if (result.blob) showPreview(result.blob)
   } catch (e) {
-    console.error(e)
-    toast(t('toast.exportFailed'))
+    reportExportError(e)
   }
 }
 
 async function download() {
+  if (!canExport()) return
   try {
     // 手机上直接下载体验不好（文件会进「文件」App），改为打开预览层，长按即可存到相册
     if (isMobile.value) {
-      showPreview(await renderBlob(card.value.cardEl, exportOptions()))
+      showPreview(await currentImage())
       return
     }
-    await downloadImage(card.value.cardEl, settings.filename, exportOptions())
+    await downloadImage(currentImage(), settings.filename)
   } catch (e) {
-    console.error(e)
-    toast(t('toast.exportFailed'))
+    reportExportError(e)
   }
 }
 
 async function copy() {
+  if (!canExport()) return
   try {
-    await copyImage(card.value.cardEl, exportOptions())
+    await copyImage(currentImage())
     toast(t('toast.copied'))
   } catch (e) {
+    if (e instanceof ExportError) return reportExportError(e)
     console.error(e)
     toast(t('toast.copyFailed'))
     download()

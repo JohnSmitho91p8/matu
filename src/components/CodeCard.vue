@@ -24,7 +24,9 @@ const emit = defineEmits(['update:code', 'update:filename', 'reset-filename', 'p
 // 导出的就是这个元素（始终按原始尺寸导出，屏幕上的缩放不影响它）
 const cardEl = ref(null)
 const fitEl = ref(null)
-defineExpose({ cardEl })
+const editorRef = ref(null)
+// 导出前先把还没做完的高亮做完，保证图片和最新的代码一致
+defineExpose({ cardEl, flush: () => editorRef.value?.flush() })
 
 // 卡片宽度跟随最长的一行，从不换行。比可用区域宽时，整张卡片等比例缩小到刚好放下：
 // 缩小只用 transform，卡片自身的排版和不缩小时完全一致；外层 .fit 按缩小后的尺寸占位
@@ -110,6 +112,7 @@ function onFilenameBlur(e) {
         <div class="dots-spacer"></div>
       </div>
       <CodeEditor
+        ref="editorRef"
         :model-value="code"
         :theme="theme.id"
         :lang="lang"
