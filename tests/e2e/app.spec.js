@@ -1,15 +1,23 @@
 import { expect, test } from '@playwright/test'
 import {
+  clickLineNumber,
+  exportPng,
+  inkRuns,
+  lineBoxInImage,
+  pixelAt,
   isMobile,
   openApp,
   pasteCode,
+  pngSize,
   setBackground,
   setCodeLanguage,
   setFontSize,
   setPadding,
   setTheme,
+  setStartLine,
   setWatermark,
   settingsFromStorage,
+  withSettings,
   toggleLineNumbers,
   typeCode,
 } from './helpers'
@@ -167,21 +175,6 @@ test.describe('code language', () => {
 test.describe('line highlighting', () => {
   test.beforeEach(async ({ page }) => openApp(page))
 
-  async function clickLineNumber(page, n, modifiers = []) {
-    const pos = await page.evaluate((n) => {
-      const line = document.querySelectorAll('.line')[n - 1].getBoundingClientRect()
-      const layer = document.querySelector('.layer').getBoundingClientRect()
-      const zoom = layer.width / document.querySelector('.layer').offsetWidth
-      return { x: layer.left + 28 * zoom, y: line.top + line.height / 2 }
-    }, n)
-    if (isMobile(page)) await page.touchscreen.tap(pos.x, pos.y)
-    else {
-      for (const key of modifiers) await page.keyboard.down(key)
-      await page.mouse.click(pos.x, pos.y)
-      for (const key of modifiers) await page.keyboard.up(key)
-    }
-    await page.waitForTimeout(250)
-  }
   const highlighted = (page) =>
     page.locator('.line').evaluateAll((els) => els.map((e, i) => (e.classList.contains('hl') ? i + 1 : 0)).filter(Boolean))
   const clearButton = (page) => page.getByRole('button', { name: 'Clear highlight' })
@@ -224,6 +217,149 @@ test.describe('line highlighting', () => {
     await clickLineNumber(page, 3)
     await pasteCode(page, 'int main() {\n  return 0;\n}')
     expect(await highlighted(page)).toEqual([])
+  })
+})
+
+test.describe('wrong and right marks, start line', () => {
+  test.beforeEach(async ({ page }) => openApp(page))
+
+  const kindOf = (page, n) =>
+    page.locator('.line').nth(n - 1).evaluate((e) => ['focus', 'wrong', 'right'].find((k) => e.classList.contains(`mark-${k}`)) ?? 'none')
+  const firstNumber = (page) => page.locator('.line').first().getAttribute('data-n')
+  const clear = (page) => page.getByRole('button', { name: 'Clear highlight' })
+
+  async function hoverTitle(page, n) {
+    const pos = await page.evaluate((n) => {
+      const line = document.querySelectorAll('.line')[n - 1].getBoundingClientRect()
+      const layer = document.querySelector('.layer').getBoundingClientRect()
+      return { x: layer.left + 28, y: line.top + line.height / 2 }
+    }, n)
+    await page.mouse.move(pos.x, pos.y)
+    return page.locator('textarea').getAttribute('title')
+  }
+
+  test('four clicks on one line go focus, wrong, right, none, and the hover title follows', async ({ page }) => {
+    const hints = ['Click: highlight', 'Click: mark as wrong', 'Click: mark as correct', 'Click: clear']
+    const kinds = ['none', 'focus', 'wrong', 'right']
+    for (let i = 0; i < 4; i++) {
+      expect(await kindOf(page, 4)).toBe(kinds[i])
+      if (!isMobile(page)) expect(await hoverTitle(page, 4)).toBe(hints[i])
+      await clickLineNumber(page, 4)
+    }
+    expect(await kindOf(page, 4)).toBe('none')
+  })
+
+  test('shift-click gives the whole range the kind of the anchor, and clear removes every kind', async ({ page }) => {
+    await clickLineNumber(page, 3)
+    await clickLineNumber(page, 3) // 错误
+    await clickLineNumber(page, 10)
+    await clickLineNumber(page, 10)
+    await clickLineNumber(page, 10) // 正确
+    expect([await kindOf(page, 3), await kindOf(page, 10)]).toEqual(['wrong', 'right'])
+    if (!isMobile(page)) {
+      await clickLineNumber(page, 7, ['Shift'])
+      // 锚点是最近点的第 10 行（正确）：第 7 到 10 行都成为正确
+      expect(await Promise.all([7, 8, 9, 10].map((n) => kindOf(page, n)))).toEqual(['right', 'right', 'right', 'right'])
+      expect(await kindOf(page, 3)).toBe('wrong')
+    }
+    await clear(page).click()
+    for (const n of [3, 7, 10]) expect(await kindOf(page, n)).toBe('none')
+    await expect(clear(page)).toHaveCount(0)
+  })
+
+  test('the exported image has a red bar on a wrong line and a green bar on a right line', async ({ page }) => {
+    await setBackground(page, 'No background')
+    await clickLineNumber(page, 2)
+    await clickLineNumber(page, 2)
+    for (let i = 0; i < 3; i++) await clickLineNumber(page, 3)
+    await page.mouse.move(0, 0)
+    await page.waitForTimeout(400)
+    const png = await exportPng(page)
+    const { width } = pngSize(png)
+    const [wrong, right] = await Promise.all(
+      [2, 3].map(async (n) => {
+        const box = await lineBoxInImage(page, n, width)
+        return pixelAt(page, png, Math.round(box.scale * 1.5), Math.round((box.top + box.bottom) / 2))
+      }),
+    )
+    expect(wrong[0]).toBeGreaterThan(wrong[1] + 80)
+    expect(wrong[0]).toBeGreaterThan(wrong[2] + 80)
+    expect(right[1]).toBeGreaterThan(right[0] + 50)
+    expect(right[1]).toBeGreaterThan(right[2] + 50)
+  })
+
+  test('start line 42 numbers the first line 42, and the input is disabled without line numbers', async ({ page }) => {
+    await setStartLine(page, 42)
+    expect(await firstNumber(page)).toBe('42')
+    expect(await page.locator('.line').nth(1).getAttribute('data-n')).toBe('43')
+    await toggleLineNumbers(page)
+    await withSettings(page, async (form) => {
+      await expect(form.getByTestId('start-line').getByRole('textbox')).toBeDisabled()
+    })
+  })
+
+  test('a start line that is not a positive number goes back to 1', async ({ page }) => {
+    await setStartLine(page, 7)
+    await setStartLine(page, 'abc')
+    expect(await firstNumber(page)).toBe('1')
+    await setStartLine(page, 0)
+    expect(await firstNumber(page)).toBe('1')
+  })
+
+  test('pasting over everything clears the marks and puts the start line back to 1', async ({ page }) => {
+    await setStartLine(page, 40)
+    await clickLineNumber(page, 3)
+    await pasteCode(page, 'int main() {\n  return 0;\n}', { replaceAll: false })
+    expect(await firstNumber(page)).toBe('40')
+    await pasteCode(page, 'int main() {\n  return 0;\n}')
+    expect(await firstNumber(page)).toBe('1')
+    expect(await kindOf(page, 3)).toBe('none')
+    await withSettings(page, async (form) => {
+      await expect(form.getByTestId('start-line').getByRole('textbox')).toHaveValue('1')
+    })
+  })
+
+  test('marks and the start line survive a reload', async ({ page }) => {
+    await setStartLine(page, 40)
+    await clickLineNumber(page, 2)
+    await clickLineNumber(page, 2)
+    await clickLineNumber(page, 5)
+    await page.reload()
+    await page.locator('.line span').first().waitFor()
+    expect(await firstNumber(page)).toBe('40')
+    expect([await kindOf(page, 2), await kindOf(page, 5)]).toEqual(['wrong', 'focus'])
+    expect(await settingsFromStorage(page)).toMatchObject({
+      startLine: 40,
+      lineMarks: [
+        { line: 1, kind: 'wrong' },
+        { line: 4, kind: 'focus' },
+      ],
+    })
+    await withSettings(page, async (form) => {
+      await expect(form.getByTestId('start-line').getByRole('textbox')).toHaveValue('40')
+    })
+  })
+
+  test('start line 99990: the widest number is whole in the exported image and clear of the code', async ({ page }) => {
+    await setBackground(page, 'No background')
+    // 每行都从第 0 列开始，代码的左边缘就是行号栏的右边界
+    await typeCode(page, Array.from({ length: 12 }, (_, i) => `int v${i} = ${i};`).join('\n'))
+    await setStartLine(page, 99990)
+    expect(await page.locator('.line').last().getAttribute('data-n')).toBe('100001')
+    await page.mouse.move(0, 0)
+    await page.waitForTimeout(400)
+    const png = await exportPng(page)
+    const { width } = pngSize(png)
+    for (const n of [1, 12]) {
+      const box = await lineBoxInImage(page, n, width)
+      const runs = await inkRuns(page, png, box.top + 2, box.bottom - 2, Math.round(12 * box.scale))
+      // 两段墨迹：行号和代码；行号没被窗口左边缘截断，与代码之间至少隔着 12px
+      expect(runs.length, `line ${n} has a gutter run and a code run`).toBe(2)
+      const [num, code] = runs
+      expect(num[0], 'number not clipped on the left').toBeGreaterThan(10 * box.scale)
+      expect(code[0] - num[1], 'gap between number and code').toBeGreaterThanOrEqual(12 * box.scale)
+      expect(Math.abs(code[0] - box.codeLeft), 'code starts where the layout says').toBeLessThan(3 * box.scale)
+    }
   })
 })
 

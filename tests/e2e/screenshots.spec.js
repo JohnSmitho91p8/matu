@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
-import { exportPng, openApp, pngSize, setBackground, setTheme, setWatermark, typeCode } from './helpers'
+import { clickLineNumber, exportPng, openApp, pngSize, setBackground, setStartLine, setTheme, setWatermark, typeCode } from './helpers'
 
 // 固定的示例代码，含中、日、韩注释：字体或样式被意外改动时，导出的图会变，这里的对比就会失败
 const CODE = `// Fast power: a^b mod p
@@ -63,6 +63,37 @@ test.describe('export screenshots', () => {
     const png = await exportPng(page)
     expect(png).toMatchSnapshot('highlight-signature-no-background.png', { maxDiffPixelRatio: 0.002, threshold: 0.05 })
   })
+})
+
+// 对错标记 + 起始行号：第 2 行错误、第 3 行正确、第 5 行聚焦，行号从 40 开始
+const MARKS_CODE = `#include <iostream>
+int main() {
+    int sum = 0;
+    for (int i = 1; i <= 10; i++) sum += i;
+    std::cout << sum << "\\n";
+}`
+
+test.describe('marks and start line screenshots', () => {
+  test.skip(({ isMobile }) => isMobile, 'compared on desktop sizes only')
+  for (const [name, id] of [
+    ['Vitesse Dark', 'vitesse-dark'],
+    ['GitHub Light', 'github-light'],
+  ]) {
+    test(`wrong, right and focus marks from line 40, theme ${name}`, async ({ page }) => {
+      await openApp(page)
+      await typeCode(page, MARKS_CODE)
+      await setTheme(page, name)
+      await setStartLine(page, 40)
+      await clickLineNumber(page, 2)
+      await clickLineNumber(page, 2)
+      for (let i = 0; i < 3; i++) await clickLineNumber(page, 3)
+      await clickLineNumber(page, 5)
+      await page.mouse.move(0, 0)
+      await page.waitForTimeout(400)
+      const png = await exportPng(page)
+      expect(png).toMatchSnapshot(`marks-start-line-${id}.png`, { maxDiffPixelRatio: 0.002, threshold: 0.05 })
+    })
+  }
 })
 
 // 手机（3 倍）导出的图，排版应该和电脑（2 倍）的基准图完全一样，只是每个像素的倍率不同：尺寸正好是 1.5 倍

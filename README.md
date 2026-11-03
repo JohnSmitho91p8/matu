@@ -13,6 +13,7 @@ Turn code into a beautiful image — copy it in one click and share it anywhere.
 - **Edit in place** — type or paste code right on the card; what you see is what you export
 - **Syntax highlighting** powered by [Shiki](https://shiki.style), the same engine as VS Code. Supports **C++, C, Python, Java and JavaScript**, with automatic language detection (or pick one manually)
 - **Line highlighting** — click a line number to spotlight it, Shift-click to select a range; every other line fades out. Perfect for pointing at the important part
+- **Wrong and right marks** — keep clicking a line number to mark the line as wrong (red) or right (green), handy for explaining a fix; line numbers can also start from any number
 - **4 code themes** with live previews, **5 gradient backgrounds** or no background at all, **3 padding sizes**, **3 font sizes** and a line-number toggle
 - **Optional signature** — add your handle (for example `@yourname`) to the corner of the image
 - **Good CJK support** — JetBrains Mono for code, LXGW WenKai Mono for Chinese and Japanese comments and D2Coding for Korean, all self-hosted and aligned to the same character grid

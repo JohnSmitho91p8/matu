@@ -95,6 +95,31 @@ export const setWatermark = (page, text) =>
     await row.getByRole('textbox').fill(text)
   })
 
+// 起始行号：输入后按回车整理（关闭行号时输入框是禁用的）
+export const setStartLine = (page, value) =>
+  withSettings(page, async (form) => {
+    const input = form.getByTestId('start-line').getByRole('textbox')
+    await input.fill(String(value))
+    await input.press('Enter')
+  })
+
+// 点第 n 行的行号（手机上是轻点）；modifiers 如 ['Shift'] 只在电脑上有效
+export async function clickLineNumber(page, n, modifiers = []) {
+  const pos = await page.evaluate((n) => {
+    const line = document.querySelectorAll('.line')[n - 1].getBoundingClientRect()
+    const layer = document.querySelector('.layer').getBoundingClientRect()
+    const zoom = layer.width / document.querySelector('.layer').offsetWidth
+    return { x: layer.left + 28 * zoom, y: line.top + line.height / 2 }
+  }, n)
+  if (isMobile(page)) await page.touchscreen.tap(pos.x, pos.y)
+  else {
+    for (const key of modifiers) await page.keyboard.down(key)
+    await page.mouse.click(pos.x, pos.y)
+    for (const key of modifiers) await page.keyboard.up(key)
+  }
+  await page.waitForTimeout(250)
+}
+
 // name: 'Auto' 或语言名，如 'Python'
 export const setCodeLanguage = (page, name) =>
   withSettings(page, (form) => form.getByTestId('language').locator('select').selectOption({ label: name }))
@@ -197,6 +222,72 @@ export async function pngStats(page, buf) {
     }
   }, buf.toString('base64'))
 }
+
+// 第 n 行（从 1 开始）在导出图里的位置：图片像素，原点在卡片左上角。
+// 没有背景时图片就是代码窗口本身；scale 是图片宽度与卡片排版宽度之比
+export const lineBoxInImage = (page, n, pngWidth) =>
+  page.evaluate(
+    ({ n, pngWidth }) => {
+      const card = document.querySelector('.card')
+      const c = card.getBoundingClientRect()
+      const zoom = c.width / card.offsetWidth
+      const scale = pngWidth / card.offsetWidth
+      const l = document.querySelectorAll('.line')[n - 1].getBoundingClientRect()
+      return {
+        scale,
+        top: Math.round(((l.top - c.top) / zoom) * scale),
+        bottom: Math.round(((l.bottom - c.top) / zoom) * scale),
+        codeLeft: ((l.left - c.left) / zoom) * scale,
+      }
+    },
+    { n, pngWidth },
+  )
+
+// 读图片中某个像素的颜色 [r, g, b, a]
+export const pixelAt = (page, buf, x, y) =>
+  page.evaluate(
+    async ({ base64, x, y }) => {
+      const bmp = await createImageBitmap(await (await fetch(`data:image/png;base64,${base64}`)).blob())
+      const c = document.createElement('canvas')
+      c.width = bmp.width
+      c.height = bmp.height
+      const ctx = c.getContext('2d')
+      ctx.drawImage(bmp, 0, 0)
+      return Array.from(ctx.getImageData(x, y, 1, 1).data)
+    },
+    { base64: buf.toString('base64'), x, y },
+  )
+
+// 图片里 y0 到 y1 这几行中有墨迹（与该行最左侧底色不同）的列，合并间距小于 gap 的相邻列，返回 [[起, 止], ...]
+export const inkRuns = (page, buf, y0, y1, gap) =>
+  page.evaluate(
+    async ({ base64, y0, y1, gap }) => {
+      const bmp = await createImageBitmap(await (await fetch(`data:image/png;base64,${base64}`)).blob())
+      const c = document.createElement('canvas')
+      c.width = bmp.width
+      c.height = bmp.height
+      const ctx = c.getContext('2d')
+      ctx.drawImage(bmp, 0, 0)
+      const { data } = ctx.getImageData(0, y0, bmp.width, y1 - y0)
+      const w = bmp.width
+      const h = y1 - y0
+      const bg = [data[4 * 8], data[4 * 8 + 1], data[4 * 8 + 2]]
+      const runs = []
+      for (let x = 0; x < w; x++) {
+        let ink = false
+        for (let y = 0; y < h && !ink; y++) {
+          const i = (y * w + x) * 4
+          ink = Math.abs(data[i] - bg[0]) + Math.abs(data[i + 1] - bg[1]) + Math.abs(data[i + 2] - bg[2]) > 90
+        }
+        if (!ink) continue
+        const last = runs[runs.length - 1]
+        if (last && x - last[1] < gap) last[1] = x
+        else runs.push([x, x])
+      }
+      return runs
+    },
+    { base64: buf.toString('base64'), y0, y1, gap },
+  )
 
 // 卡片在页面上的原始尺寸（不受缩小显示影响）
 export const cardNaturalSize = (page) =>

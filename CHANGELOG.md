@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-11-04
+
+### Added
+
+- Mark a line as wrong (red) or right (green) as well as focus: click a line number repeatedly to cycle through focus, wrong, right and none, and Shift-click to mark a range. The marks show as a tinted band with a bar on the left edge, in the exported image too
+- Line numbers can start from any number, set in the Settings panel; the number column widens to fit, and pasting over all the code puts it back to 1
+
+### Changed
+
+- With no background, the image now contains only the code window: no padding, no shadow, and smaller corners
+
+### Fixed
+
+- Chinese, Japanese and Korean text could be missing from exported images in Safari; the export now waits for the embedded fonts to be ready
+
 ## [3.0.0] - 2026-11-03
 
 ### Added
