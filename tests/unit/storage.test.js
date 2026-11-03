@@ -24,7 +24,8 @@ describe('loadAppSettings', () => {
     expect(Object.keys(s).sort()).toEqual(Object.keys(DEFAULT_SETTINGS).sort())
     expect(s.fontSize).toBe(DEFAULT_SETTINGS.fontSize)
     expect(s.language).toBe('auto')
-    expect(s.highlightedLines).toEqual([])
+    expect(s.lineMarks).toEqual([])
+    expect(s.startLine).toBe(1)
     expect(s.watermarkEnabled).toBe(false)
   })
 
@@ -41,15 +42,34 @@ describe('loadAppSettings', () => {
   it('falls back to the default for invalid values', () => {
     localStorage.setItem(
       KEY,
-      JSON.stringify({ theme: 'nope', padding: 'xl', fontSize: 3, language: 'rust', highlightedLines: [-1, 'a'], watermarkText: 'x'.repeat(31) }),
+      JSON.stringify({ theme: 'nope', padding: 'xl', fontSize: 3, language: 'rust', highlightedLines: [-1, 'a'], lineMarks: [{ line: 1, kind: 'pink' }], startLine: 0, watermarkText: 'x'.repeat(31) }),
     )
     const s = loadAppSettings()
     expect(s.theme).toBe(DEFAULT_SETTINGS.theme)
     expect(s.padding).toBe(DEFAULT_SETTINGS.padding)
     expect(s.fontSize).toBe(DEFAULT_SETTINGS.fontSize)
     expect(s.language).toBe('auto')
-    expect(s.highlightedLines).toEqual([])
+    expect(s.lineMarks).toEqual([])
+    expect(s.startLine).toBe(1)
     expect(s.watermarkText).toBe('')
+  })
+
+  it('turns the highlighted lines saved by an older version into focus marks', () => {
+    localStorage.setItem(KEY, JSON.stringify({ theme: 'github-light', highlightedLines: [4, 1, 4] }))
+    const s = loadAppSettings()
+    expect(s.lineMarks).toEqual([{ line: 1, kind: 'focus' }, { line: 4, kind: 'focus' }])
+    expect(s.theme).toBe('github-light')
+    expect('highlightedLines' in s).toBe(false)
+  })
+
+  it('prefers lineMarks over the old highlightedLines when both are present', () => {
+    localStorage.setItem(KEY, JSON.stringify({ highlightedLines: [1], lineMarks: [{ line: 2, kind: 'wrong' }] }))
+    expect(loadAppSettings().lineMarks).toEqual([{ line: 2, kind: 'wrong' }])
+  })
+
+  it('ignores invalid old highlighted lines', () => {
+    localStorage.setItem(KEY, JSON.stringify({ highlightedLines: [-1, 'a'] }))
+    expect(loadAppSettings().lineMarks).toEqual([])
   })
 
   it('survives corrupted data', () => {
@@ -84,8 +104,12 @@ describe('storage when localStorage is unavailable', () => {
 
 describe('saveSettings / loadSettings', () => {
   it('round-trips settings', () => {
-    saveSettings({ ...DEFAULT_SETTINGS, theme: 'catppuccin-mocha', highlightedLines: [1, 3] })
-    expect(loadAppSettings()).toMatchObject({ theme: 'catppuccin-mocha', highlightedLines: [1, 3] })
+    saveSettings({ ...DEFAULT_SETTINGS, theme: 'catppuccin-mocha', lineMarks: [{ line: 1, kind: 'wrong' }, { line: 3, kind: 'right' }], startLine: 40 })
+    expect(loadAppSettings()).toMatchObject({
+      theme: 'catppuccin-mocha',
+      lineMarks: [{ line: 1, kind: 'wrong' }, { line: 3, kind: 'right' }],
+      startLine: 40,
+    })
   })
 
   it('only keeps keys that exist in the defaults', () => {

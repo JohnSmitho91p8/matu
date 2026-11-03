@@ -33,8 +33,10 @@ export const DEFAULT_SETTINGS = {
   detectedLanguage: DEFAULT_LANGUAGE,
   // 文件名是否被用户改过（没改过就跟随语言）
   filenameEdited: false,
-  // 被高亮的行号（0 开始）
-  highlightedLines: [],
+  // 行标记 [{ line, kind }]：line 是行下标（0 开始），kind 是 focus / wrong / right
+  lineMarks: [],
+  // 第一行显示的行号（只影响显示，标记和编辑仍按 0 开始的行下标处理）
+  startLine: 1,
   // 署名水印
   watermarkEnabled: false,
   watermarkText: '',
