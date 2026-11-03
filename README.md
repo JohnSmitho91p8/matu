@@ -6,6 +6,8 @@ Turn code into a beautiful image — copy it in one click and share it anywhere.
 
 ![Screenshot](docs/screenshot.png)
 
+![Demo: paste code, mark a wrong line and a right line, copy the image](docs/demo.gif)
+
 **Live demo: <https://JohnSmitho91p8.github.io/matu/>**
 
 ## Features

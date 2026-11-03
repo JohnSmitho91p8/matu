@@ -6,6 +6,8 @@
 
 ![效果截图](docs/screenshot.png)
 
+![演示：粘贴代码，标出错误行和正确行，复制图片](docs/demo.zh-CN.gif)
+
 **在线使用：<https://JohnSmitho91p8.github.io/matu/>**
 
 ## 功能
