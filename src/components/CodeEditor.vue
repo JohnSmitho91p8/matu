@@ -11,8 +11,8 @@ const props = defineProps({
   lineNumbers: { type: Boolean, default: true },
   fontSize: { type: Number, default: 15 },
   mobile: { type: Boolean, default: false },
-  // 被高亮的行号（0 开始）
-  highlighted: { type: Array, default: () => [] },
+  // 行标记 [{ line, kind }]：line 是行下标（0 开始），kind 是 focus / wrong / right
+  marks: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['update:modelValue', 'paste-code', 'toggle-line'])
 
@@ -28,7 +28,13 @@ let cachedTokens = []
 const lineTokens = ref([])
 
 const lines = computed(() => props.modelValue.split('\n'))
-const highlightedSet = computed(() => new Set(props.highlighted))
+const kindByLine = computed(() => new Map(props.marks.map((m) => [m.line, m.kind])))
+
+// 鼠标停在行号上时的提示：点击会把这一行变成什么（无 → 聚焦 → 错误 → 正确 → 无）
+const NEXT_HINT = { none: 'mark.toFocus', focus: 'mark.toWrong', wrong: 'mark.toRight', right: 'mark.toNone' }
+const hoverTitle = computed(() =>
+  hoverLine.value >= 0 ? t(NEXT_HINT[kindByLine.value.get(hoverLine.value) ?? 'none']) : undefined,
+)
 const digits = computed(() => Math.max(2, String(lines.value.length).length))
 
 // 输入后立刻渲染：与缓存相同的首尾行沿用旧颜色，改动的行先显示为纯文本，
@@ -173,7 +179,7 @@ function onClick(e) {
 <template>
   <div
     class="editor"
-    :class="{ 'no-lineno': !lineNumbers, 'has-hl': highlighted.length > 0, 'on-gutter': hoverLine >= 0 }"
+    :class="{ 'no-lineno': !lineNumbers, 'has-hl': marks.length > 0, 'on-gutter': hoverLine >= 0 }"
     :style="{
       '--digits': digits,
       fontSize: `${fontSize}px`,
@@ -186,9 +192,9 @@ function onClick(e) {
       <div
         v-for="(tokens, i) in lineTokens"
         :key="i"
-        v-memo="[tokens, i, highlightedSet.has(i), hoverLine === i]"
+        v-memo="[tokens, i, kindByLine.get(i), hoverLine === i]"
         class="line"
-        :class="{ hl: highlightedSet.has(i), hover: hoverLine === i }"
+        :class="[kindByLine.has(i) && ['hl', `mark-${kindByLine.get(i)}`], { hover: hoverLine === i }]"
         :data-n="i + 1"
       ><span
           v-for="(t, j) in tokens"
@@ -211,6 +217,7 @@ function onClick(e) {
       autocorrect="off"
       wrap="off"
       :aria-label="t('editor.label')"
+      :title="hoverTitle"
       @input="onInput"
       @keydown="onKeydown"
       @paste="onPaste"
@@ -302,6 +309,31 @@ function onClick(e) {
   right: calc(-1 * var(--pad-x));
   background: color-mix(in srgb, var(--fg) 8%, transparent);
   z-index: -1;
+}
+
+/* 错误 / 正确：彩色淡色带 + 行号同色 + 窗口左边缘一条 3px 竖条（没有颜色也能靠竖条区分） */
+.line.mark-wrong,
+.line.mark-right {
+  --mark: var(--wrong);
+}
+
+.line.mark-right {
+  --mark: var(--right);
+}
+
+.line.mark-wrong::after,
+.line.mark-right::after {
+  background:
+    linear-gradient(var(--mark), var(--mark)) left / 3px 100% no-repeat,
+    color-mix(in srgb, var(--mark) 12%, transparent);
+}
+
+/* 悬停时行号也保持标记的颜色 */
+.line.mark-wrong::before,
+.line.mark-right::before,
+.line.mark-wrong.hover::before,
+.line.mark-right.hover::before {
+  color: var(--mark);
 }
 
 .no-lineno .line.hl::after {

@@ -17,7 +17,8 @@ const props = defineProps({
   watermark: { type: String, default: '' },
   mobile: { type: Boolean, default: false },
   lineNumbers: { type: Boolean, default: true },
-  highlighted: { type: Array, default: () => [] },
+  // 行标记 [{ line, kind }]
+  marks: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['update:code', 'update:filename', 'reset-filename', 'paste-code', 'toggle-line'])
 
@@ -91,7 +92,7 @@ function onFilenameBlur(e) {
     <div
       class="window"
       :class="{ bare: !background }"
-      :style="{ background: theme.bg, '--fg': theme.fg, '--scale': fontSize / BASE_FONT_SIZE }"
+      :style="{ background: theme.bg, '--fg': theme.fg, '--wrong': theme.wrong, '--right': theme.right, '--scale': fontSize / BASE_FONT_SIZE }"
     >
       <div class="titlebar">
         <div class="dots">
@@ -120,7 +121,7 @@ function onFilenameBlur(e) {
         :font-size="fontSize"
         :mobile="mobile"
         :line-numbers="lineNumbers"
-        :highlighted="highlighted"
+        :marks="marks"
         @update:model-value="emit('update:code', $event)"
         @paste-code="emit('paste-code', $event)"
         @toggle-line="emit('toggle-line', $event)"

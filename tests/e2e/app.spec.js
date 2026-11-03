@@ -186,7 +186,7 @@ test.describe('line highlighting', () => {
     page.locator('.line').evaluateAll((els) => els.map((e, i) => (e.classList.contains('hl') ? i + 1 : 0)).filter(Boolean))
   const clearButton = (page) => page.getByRole('button', { name: 'Clear highlight' })
 
-  test('click toggles a line, shift-click selects a range, and the clear button appears only when needed', async ({ page }) => {
+  test('click cycles a line, shift-click selects a range, and the clear button appears only when needed', async ({ page }) => {
     await expect(clearButton(page)).toHaveCount(0)
     await clickLineNumber(page, 6)
     expect(await highlighted(page)).toEqual([6])
@@ -195,7 +195,8 @@ test.describe('line highlighting', () => {
       await clickLineNumber(page, 9, ['Shift'])
       expect(await highlighted(page)).toEqual([6, 7, 8, 9])
     }
-    await clickLineNumber(page, 6)
+    // 再点三次：聚焦 → 错误 → 正确 → 无
+    for (let i = 0; i < 3; i++) await clickLineNumber(page, 6)
     expect(await highlighted(page)).not.toContain(6)
     await clickLineNumber(page, 12)
     expect(await highlighted(page)).toContain(12)

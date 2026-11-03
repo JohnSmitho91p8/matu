@@ -72,12 +72,10 @@ watch(
 )
 
 // ---- 行高亮 ----
-const markedLines = computed(() => settings.lineMarks.map((m) => m.line))
 let highlightAnchor = null
 
 function onToggleLine({ index, shift }) {
-  // 界面暂时只有聚焦一种样式，所以单击先只在 无 ↔ 聚焦 之间切换
-  settings.lineMarks = toggleHighlight(settings.lineMarks, index, highlightAnchor, shift, ['focus'])
+  settings.lineMarks = toggleHighlight(settings.lineMarks, index, highlightAnchor, shift)
   highlightAnchor = index
 }
 
@@ -285,7 +283,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         :lang="resolvedLanguage"
         @update:filename="onFilenameInput"
         @reset-filename="resetFilename"
-        :highlighted="markedLines"
+        :marks="settings.lineMarks"
         @paste-code="onPasteCode"
         @toggle-line="onToggleLine"
         :theme="theme"
