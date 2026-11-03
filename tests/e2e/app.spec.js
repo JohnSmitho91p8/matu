@@ -352,13 +352,20 @@ test.describe('wrong and right marks, start line', () => {
     const { width } = pngSize(png)
     for (const n of [1, 12]) {
       const box = await lineBoxInImage(page, n, width)
-      const runs = await inkRuns(page, png, box.top + 2, box.bottom - 2, Math.round(12 * box.scale))
-      // 两段墨迹：行号和代码；行号没被窗口左边缘截断，与代码之间至少隔着 12px
-      expect(runs.length, `line ${n} has a gutter run and a code run`).toBe(2)
-      const [num, code] = runs
-      expect(num[0], 'number not clipped on the left').toBeGreaterThan(10 * box.scale)
-      expect(code[0] - num[1], 'gap between number and code').toBeGreaterThanOrEqual(12 * box.scale)
-      expect(Math.abs(code[0] - box.codeLeft), 'code starts where the layout says').toBeLessThan(3 * box.scale)
+      // 不依赖墨迹分成几段（代码里的空格在不同字体、倍率下间距不同）：按位置分类，
+      // 代码左边缘 box.codeLeft 左侧的墨迹都是行号，其余是代码
+      const runs = await inkRuns(page, png, box.top + 2, box.bottom - 2, 2) // 只合并相邻的列
+      const where = `line ${n}, scale ${box.scale}, codeLeft ${box.codeLeft.toFixed(1)}, ink runs ${JSON.stringify(runs)}`
+      const numbers = runs.filter(([start]) => start < box.codeLeft - 2 * box.scale)
+      const code = runs.filter(([start]) => start >= box.codeLeft - 2 * box.scale)
+      expect(numbers.length, `has a gutter number: ${where}`).toBeGreaterThan(0)
+      expect(code.length, `has code: ${where}`).toBeGreaterThan(0)
+      const numStart = numbers[0][0]
+      const numEnd = numbers[numbers.length - 1][1]
+      // 行号没被窗口左边缘截断，与代码之间至少隔着 12px；代码从排版的位置开始
+      expect(numStart, `number not clipped on the left: ${where}`).toBeGreaterThan(10 * box.scale)
+      expect(box.codeLeft - numEnd, `gap between number and code: ${where}`).toBeGreaterThanOrEqual(12 * box.scale)
+      expect(Math.abs(code[0][0] - box.codeLeft), `code starts where the layout says: ${where}`).toBeLessThan(3 * box.scale)
     }
   })
 })
