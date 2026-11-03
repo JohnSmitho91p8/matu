@@ -16,11 +16,11 @@ concurrency:
 
 jobs:
   unit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -30,15 +30,15 @@ jobs:
   # 四个浏览器 / 设备组合各占一台机器并行运行，总时长约等于最慢的那一组。
   # 计时类的断言在 CI 里只记录数据、不判定失败（GitHub 的机器比开发机慢得多），其余检查照常
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         project: [chromium-desktop, webkit-desktop, chromium-iphone, webkit-iphone]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -49,7 +49,7 @@ jobs:
         run: npx playwright test --project=${{ matrix.project }}
       - name: Upload report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.project }}
           path: |
