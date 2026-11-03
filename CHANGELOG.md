@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-11-04
+
+### Added
+
+- Share links: "Copy link" (or Cmd/Ctrl + Shift + L) copies a link that holds the code, language, file name, theme, background, padding, font size, line numbers, start line and line marks, but not the signature or the interface language. Whoever opens it sees the same card. The code stays in the part of the address after `#` and is never sent to a server
+- Opening a shared link keeps your own code safe: the notice has an Undo button that restores your code and settings
+- Install Matu on a computer or phone and use it offline after the first visit, including opening share links. New versions download in the background and take effect the next time the app is opened
+- An animated demo in both READMEs, recorded by `scripts/record-demo.mjs`
+
+### Changed
+
+- GitHub Actions workflows run on `ubuntu-24.04` and use Node 24 versions of the official actions
+
 ## [3.1.0] - 2026-11-04
 
 ### Added
